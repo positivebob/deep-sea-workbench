@@ -1,0 +1,1805 @@
+---
+output: html_document
+---
+---
+title: "DSC-RTP National Database Dashboard"
+author: "Robert P. McGuinn"
+date: "February 3, 2015"
+output: html_document
+--- 
+##### Database Version: DSCRTP_NatDB_20141219-0.txt
+
+***
+
+```{r load_data_and_packages,echo=FALSE,message=FALSE, warning=FALSE}
+load("C:/rworking/DeepSeaData20150128/data.noflag.RData")
+data<-data
+library(dplyr)
+library(knitr)
+library(ggplot2)
+#define unflagged dataset
+data_unfl<-
+  data %>%
+  filter(Flag == 0)
+
+data_flagged<-
+  data %>%
+  filter(Flag == 1)
+```
+
+***
+
+# Global Summary
+* Total number of records in the database (flagged + unflagged, global): **`r length(data$CatalogNumber)`** 
+
+* Total number of unflagged records: **`r length(data_unfl$CatalogNumber)`**  
+``` {r FlagProportion_Global, echo=FALSE, results='hide'}
+x <- (length(data_flagged$CatalogNumber)/length(data$CatalogNumber) *100)
+```
+
+* Proportion of records that are flagged: **`r format(round(x, 2), nsmall = 2)`%**
+
+* Total number of unique Scientific Names: **`r length(unique(data$ScientificName))`**
+
+***
+##### Table of the number of database records (n) contributed by each Data Provider: 
+``` {r DataProvider_Global, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(DataProvider) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Pie chart of VernacularNameCategory: 
+``` {r VerNacularName_Pie_Global, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$VernacularNameCategory, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Taxon Rank: 
+``` {r TaxonRank_Pie_Global, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$TaxonRank, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Corals vs. Sponges: 
+``` {r Coral_v_Sponge_Pie_Global, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$Phylum, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.8,
+    )
+```
+
+***
+
+##### Depth distribution of database records:
+``` {r Depth_Summary_Global, echo=FALSE, message=FALSE, warning=FALSE}
+# cut the depth vector and then barplot (varying bins) 
+groups = cut(data_unfl$gisDepth, breaks=c(0,50,100,200,500,1000,5000), include.lowest=TRUE)
+
+#bygroup = tapply(data$gisDepth, groups)
+table<-table(groups)
+table<-as.data.frame(table)
+table <- table[rev(order(row.names(table))),]
+
+names.arg = c("0-50","50-100","100-200", "200-500", "500-1000", ">1000")
+rev.names.arg= rev(names.arg)
+
+par(mar=c(8,8,4,3))
+par(mgp=c(6, 2, 1))
+
+barplot(table$Freq, 
+        horiz=T, 
+        las=2,
+        xlab="Number of Records",
+        ylab="Depth in Meters",
+        names.arg = rev.names.arg
+)
+```
+
+***
+
+##### Boxplot of depth
+``` {r Depth_Summary_Boxplots_Global, echo=FALSE, message=FALSE, warning=FALSE,fig.width=12, fig.height=8}
+qplot(Class,as.numeric(DepthInMeters), data=data_unfl, geom=c("boxplot"),alpha=I(1), 
+      #main="Depth Distribution of All Taxa in ",
+      xlab="Class", ylab="Depth (meters)") +
+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_y_continuous(limits = c(0, 5000))
+```
+
+***
+
+##### Histogram of depth distribution   
+``` {r Depth_Histogram_Global, echo=FALSE,fig.width=14, fig.height=8}
+# Kernel density plots #
+# grouped by X (indicated by color)
+qplot(as.numeric(MinimumDepthInMeters), data=data_unfl, geom="histogram", alpha=I(.5), fill = Order,
+      xlab="Depth (Meters)", 
+      ylab="Number of Database Records", binwidth = 50) +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_x_continuous(limits = c(0, 3500))
+```
+
+***
+
+##### Distribution of records by Large Marine Ecosystem designation:
+``` {r gisLME_Global, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLME) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Cross tablulation of Data Provider by VernacularNameCategory: 
+``` {r DataProvider-VernacularNameCategory_Global, echo=FALSE}
+table <- table(data_unfl$DataProvider,data_unfl$VernacularNameCategory)
+table <- kable(table)
+table
+```
+
+***
+
+***
+
+***
+
+# Pacific Region  
+``` {r sub_Pacific, echo=FALSE}
+new_tbl <-
+  data %>%
+  filter(!is.na(MinimumDepthInMeters),
+         as.numeric(MinimumDepthInMeters) != 999,
+         as.numeric(MinimumDepthInMeters) != -999,
+         !is.na(VernacularNameCategory),
+         gisPacificFMC == T)
+
+data_flagged<-new_tbl %>%
+  filter(Flag == "1")
+
+data_unfl<-new_tbl %>%
+  filter(Flag == "0")
+
+x <- "Pacific"
+```
+
+* Total number of records in the region (flagged + unflagged): **`r length(new_tbl$CatalogNumber)`** 
+
+* Total number of unflagged records: **`r length(data_unfl$CatalogNumber)`**  
+``` {r FlagProportion_Pacific, echo=FALSE, results='hide'}
+z <- (length(data_flagged$CatalogNumber)/length(new_tbl$CatalogNumber) *100)
+```
+
+* Proportion of records that are flagged: **`r format(round(z, 2), nsmall = 2)`%**
+
+* Total number of unique Scientific Names: **`r length(unique(data_unfl$ScientificName))`**
+
+***
+
+##### Table of the number of database records (n) contributed by each Data Provider (`r x`): 
+``` {r DataProvider_Pacific, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(DataProvider) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Pie chart of VernacularNameCategory (`r x`): 
+``` {r VerNacularName_Pie_Pacific, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$VernacularNameCategory, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Taxon Rank (`r x`): 
+``` {r TaxonRank_Pie_Pacific, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$TaxonRank, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Corals vs. Sponges (`r x`): 
+``` {r Coral_v_Sponge_Pie_Pacific, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$Phylum, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.8,
+    )
+```
+
+***
+
+##### Depth distribution of database records (`r x`):
+``` {r Depth_Summary_Pacific, echo=FALSE, message=FALSE, warning=FALSE}
+# cut the depth vector and then barplot (varying bins) 
+groups = cut(data_unfl$gisDepth, breaks=c(0,50,100,200,500,1000,5000), include.lowest=TRUE)
+
+#bygroup = tapply(data$gisDepth, groups)
+table<-table(groups)
+table<-as.data.frame(table)
+table <- table[rev(order(row.names(table))),]
+
+names.arg = c("0-50","50-100","100-200", "200-500", "500-1000", ">1000")
+rev.names.arg= rev(names.arg)
+
+par(mar=c(8,8,4,3))
+par(mgp=c(6, 2, 1))
+
+barplot(table$Freq, 
+        horiz=T, 
+        las=2,
+        xlab="Number of Records",
+        ylab="Depth in Meters",
+        names.arg = rev.names.arg
+)
+```
+
+***
+
+##### Boxplot of depth by Genus (`r x`):
+``` {r Depth_Summary_Boxplots_Pacific, echo=FALSE, message=FALSE, warning=FALSE,fig.width=12, fig.height=8}
+qplot(Genus,as.numeric(DepthInMeters), data=data_unfl, geom=c("boxplot"),alpha=I(1), 
+      #main="Depth Distribution of All Taxa in ",
+      xlab="Genus", ylab="Depth (meters)") +
+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_y_continuous(limits = c(0, 5000))
+```
+
+***
+
+##### Histogram of depth distribution (`r x`):   
+``` {r Depth_Histogram_Pacific, echo=FALSE,fig.width=14, fig.height=8}
+# Kernel density plots #
+# grouped by X (indicated by color)
+qplot(as.numeric(MinimumDepthInMeters), data=data_unfl, geom="histogram", alpha=I(.5), fill = Order,
+      xlab="Depth (Meters)", 
+      ylab="Number of Database Records", binwidth = 50) +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_x_continuous(limits = c(0, 3500))
+```
+
+***
+
+##### Distribution of records by Large Marine Ecosystem designation (`r x`):
+``` {r gisLME_Pacific, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLME) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Cross tablulation of Data Provider by VernacularNameCategory (`r x`): 
+``` {r DataProvider-VernacularNameCategory_Pacific, echo=FALSE}
+table <- table(data_unfl$DataProvider,data_unfl$VernacularNameCategory)
+table <- kable(table)
+table
+```
+
+***
+
+##### Ranked list of unique ScientificName (`r x`):
+``` {r Ranked_ScientificName_Pacific, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(ScientificName) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Distribution of database records by named gisLocality (`r x`): 
+``` {r gisLocality_Pacific, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLocality) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+***
+
+***
+
+# Western Pacific Region  
+``` {r sub_WesternPacific, echo=FALSE}
+new_tbl <-
+  data %>%
+  filter(!is.na(MinimumDepthInMeters),
+         as.numeric(MinimumDepthInMeters) != 999,
+         as.numeric(MinimumDepthInMeters) != -999,
+         !is.na(VernacularNameCategory),
+         gisWesternPacificFMC == T)
+
+data_flagged<-new_tbl %>%
+  filter(Flag == "1")
+
+data_unfl<-new_tbl %>%
+  filter(Flag == "0")
+
+x <- "WesternPacific"
+```
+
+* Total number of records in the region (flagged + unflagged): **`r length(new_tbl$CatalogNumber)`** 
+
+* Total number of unflagged records: **`r length(data_unfl$CatalogNumber)`**  
+``` {r FlagProportion_WesternPacific, echo=FALSE, results='hide'}
+z <- (length(data_flagged$CatalogNumber)/length(new_tbl$CatalogNumber) *100)
+```
+
+* Proportion of records that are flagged: **`r format(round(z, 2), nsmall = 2)`%**
+
+* Total number of unique Scientific Names: **`r length(unique(data_unfl$ScientificName))`**
+
+***
+
+##### Table of the number of database records (n) contributed by each Data Provider (`r x`): 
+``` {r DataProvider_WesternPacific, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(DataProvider) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Pie chart of VernacularNameCategory (`r x`): 
+``` {r VerNacularName_Pie_WesternPacific, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$VernacularNameCategory, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Taxon Rank (`r x`): 
+``` {r TaxonRank_Pie_WesternPacific, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$TaxonRank, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Corals vs. Sponges (`r x`): 
+``` {r Coral_v_Sponge_Pie_WesternPacific, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$Phylum, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.8,
+    )
+```
+
+***
+
+##### Depth distribution of database records (`r x`):
+``` {r Depth_Summary_WesternPacific, echo=FALSE, message=FALSE, warning=FALSE}
+# cut the depth vector and then barplot (varying bins) 
+groups = cut(data_unfl$gisDepth, breaks=c(0,50,100,200,500,1000,5000), include.lowest=TRUE)
+
+#bygroup = tapply(data$gisDepth, groups)
+table<-table(groups)
+table<-as.data.frame(table)
+table <- table[rev(order(row.names(table))),]
+
+names.arg = c("0-50","50-100","100-200", "200-500", "500-1000", ">1000")
+rev.names.arg= rev(names.arg)
+
+par(mar=c(8,8,4,3))
+par(mgp=c(6, 2, 1))
+
+barplot(table$Freq, 
+        horiz=T, 
+        las=2,
+        xlab="Number of Records",
+        ylab="Depth in Meters",
+        names.arg = rev.names.arg
+)
+```
+
+***
+
+##### Boxplot of depth by Genus (`r x`):
+``` {r Depth_Summary_Boxplots_WesternPacific, echo=FALSE, message=FALSE, warning=FALSE,fig.width=12, fig.height=8}
+qplot(Genus,as.numeric(DepthInMeters), data=data_unfl, geom=c("boxplot"),alpha=I(1), 
+      #main="Depth Distribution of All Taxa in ",
+      xlab="Genus", ylab="Depth (meters)") +
+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_y_continuous(limits = c(0, 5000))
+```
+
+***
+
+##### Histogram of depth distribution (`r x`):   
+``` {r Depth_Histogram_WesternPacific, echo=FALSE,fig.width=14, fig.height=8}
+# Kernel density plots #
+# grouped by X (indicated by color)
+qplot(as.numeric(MinimumDepthInMeters), data=data_unfl, geom="histogram", alpha=I(.5), fill = Order,
+      xlab="Depth (Meters)", 
+      ylab="Number of Database Records", binwidth = 50) +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_x_continuous(limits = c(0, 3500))
+```
+
+***
+
+##### Distribution of records by Large Marine Ecosystem designation (`r x`):
+``` {r gisLME_WesternPacific, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLME) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Cross tablulation of Data Provider by VernacularNameCategory (`r x`): 
+``` {r DataProvider-VernacularNameCategory_WesternPacific, echo=FALSE}
+table <- table(data_unfl$DataProvider,data_unfl$VernacularNameCategory)
+table <- kable(table)
+table
+```
+
+***
+
+##### Ranked list of unique ScientificName (`r x`):
+``` {r Ranked_ScientificName_WesternPacific, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(ScientificName) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Distribution of database records by named gisLocality (`r x`): 
+``` {r gisLocality_WesternPacific, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLocality) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+***
+
+# North Pacific Region  
+``` {r sub_NorthPacific, echo=FALSE}
+new_tbl <-
+  data %>%
+  filter(!is.na(MinimumDepthInMeters),
+         as.numeric(MinimumDepthInMeters) != 999,
+         as.numeric(MinimumDepthInMeters) != -999,
+         !is.na(VernacularNameCategory),
+         gisNorthPacificFMC == T)
+
+data_flagged<-new_tbl %>%
+  filter(Flag == "1")
+
+data_unfl<-new_tbl %>%
+  filter(Flag == "0")
+
+x <- "NorthPacific"
+```
+
+* Total number of records in the region (flagged + unflagged): **`r length(new_tbl$CatalogNumber)`** 
+
+* Total number of unflagged records: **`r length(data_unfl$CatalogNumber)`**  
+``` {r FlagProportion_NorthPacific, echo=FALSE, results='hide'}
+z <- (length(data_flagged$CatalogNumber)/length(new_tbl$CatalogNumber) *100)
+```
+
+* Proportion of records that are flagged: **`r format(round(z, 2), nsmall = 2)`%**
+
+* Total number of unique Scientific Names: **`r length(unique(data_unfl$ScientificName))`**
+
+***
+
+##### Table of the number of database records (n) contributed by each Data Provider (`r x`): 
+``` {r DataProvider_NorthPacific, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(DataProvider) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Pie chart of VernacularNameCategory (`r x`): 
+``` {r VerNacularName_Pie_NorthPacific, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$VernacularNameCategory, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Taxon Rank (`r x`): 
+``` {r TaxonRank_Pie_NorthPacific, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$TaxonRank, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Corals vs. Sponges (`r x`): 
+``` {r Coral_v_Sponge_Pie_NorthPacific, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$Phylum, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.8,
+    )
+```
+
+***
+
+##### Depth distribution of database records (`r x`):
+``` {r Depth_Summary_NorthPacific, echo=FALSE, message=FALSE, warning=FALSE}
+# cut the depth vector and then barplot (varying bins) 
+groups = cut(data_unfl$gisDepth, breaks=c(0,50,100,200,500,1000,5000), include.lowest=TRUE)
+
+#bygroup = tapply(data$gisDepth, groups)
+table<-table(groups)
+table<-as.data.frame(table)
+table <- table[rev(order(row.names(table))),]
+
+names.arg = c("0-50","50-100","100-200", "200-500", "500-1000", ">1000")
+rev.names.arg= rev(names.arg)
+
+par(mar=c(8,8,4,3))
+par(mgp=c(6, 2, 1))
+
+barplot(table$Freq, 
+        horiz=T, 
+        las=2,
+        xlab="Number of Records",
+        ylab="Depth in Meters",
+        names.arg = rev.names.arg
+)
+```
+
+***
+
+##### Boxplot of depth by Genus (`r x`):
+``` {r Depth_Summary_Boxplots_NorthPacific, echo=FALSE, message=FALSE, warning=FALSE,fig.width=12, fig.height=8}
+qplot(Genus,as.numeric(DepthInMeters), data=data_unfl, geom=c("boxplot"),alpha=I(1), 
+      #main="Depth Distribution of All Taxa in ",
+      xlab="Genus", ylab="Depth (meters)") +
+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_y_continuous(limits = c(0, 5000))
+```
+
+***
+
+##### Histogram of depth distribution (`r x`):   
+``` {r Depth_Histogram_NorthPacific, echo=FALSE,fig.width=14, fig.height=8}
+# Kernel density plots #
+# grouped by X (indicated by color)
+qplot(as.numeric(MinimumDepthInMeters), data=data_unfl, geom="histogram", alpha=I(.5), fill = Order,
+      xlab="Depth (Meters)", 
+      ylab="Number of Database Records", binwidth = 50) +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_x_continuous(limits = c(0, 3500))
+```
+
+***
+
+##### Distribution of records by Large Marine Ecosystem designation (`r x`):
+``` {r gisLME_NorthPacific, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLME) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Cross tablulation of Data Provider by VernacularNameCategory (`r x`): 
+``` {r DataProvider-VernacularNameCategory_NorthPacific, echo=FALSE}
+table <- table(data_unfl$DataProvider,data_unfl$VernacularNameCategory)
+table <- kable(table)
+table
+```
+
+***
+
+##### Ranked list of unique ScientificName (`r x`):
+``` {r Ranked_ScientificName_NorthPacific, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(ScientificName) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Distribution of database records by named gisLocality (`r x`): 
+``` {r gisLocality_NorthPacific, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLocality) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+***
+
+# Gulf of Mexico Region  
+``` {r sub_GulfofMexico, echo=FALSE}
+new_tbl <-
+  data %>%
+  filter(!is.na(MinimumDepthInMeters),
+         as.numeric(MinimumDepthInMeters) != 999,
+         as.numeric(MinimumDepthInMeters) != -999,
+         !is.na(VernacularNameCategory),
+         gisGulfofMexicoFMC == T)
+
+data_flagged<-new_tbl %>%
+  filter(Flag == "1")
+
+data_unfl<-new_tbl %>%
+  filter(Flag == "0")
+
+x <- "GulfofMexico"
+```
+
+* Total number of records in the region (flagged + unflagged): **`r length(new_tbl$CatalogNumber)`** 
+
+* Total number of unflagged records: **`r length(data_unfl$CatalogNumber)`**  
+``` {r FlagProportion_GulfofMexico, echo=FALSE, results='hide'}
+z <- (length(data_flagged$CatalogNumber)/length(new_tbl$CatalogNumber) *100)
+```
+
+* Proportion of records that are flagged: **`r format(round(z, 2), nsmall = 2)`%**
+
+* Total number of unique Scientific Names: **`r length(unique(data_unfl$ScientificName))`**
+
+***
+
+##### Table of the number of database records (n) contributed by each Data Provider (`r x`): 
+``` {r DataProvider_GulfofMexico, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(DataProvider) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Pie chart of VernacularNameCategory (`r x`): 
+``` {r VerNacularName_Pie_GulfofMexico, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$VernacularNameCategory, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Taxon Rank (`r x`): 
+``` {r TaxonRank_Pie_GulfofMexico, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$TaxonRank, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Corals vs. Sponges (`r x`): 
+``` {r Coral_v_Sponge_Pie_GulfofMexico, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$Phylum, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.8,
+    )
+```
+
+***
+
+##### Depth distribution of database records (`r x`):
+``` {r Depth_Summary_GulfofMexico, echo=FALSE, message=FALSE, warning=FALSE}
+# cut the depth vector and then barplot (varying bins) 
+groups = cut(data_unfl$gisDepth, breaks=c(0,50,100,200,500,1000,5000), include.lowest=TRUE)
+
+#bygroup = tapply(data$gisDepth, groups)
+table<-table(groups)
+table<-as.data.frame(table)
+table <- table[rev(order(row.names(table))),]
+
+names.arg = c("0-50","50-100","100-200", "200-500", "500-1000", ">1000")
+rev.names.arg= rev(names.arg)
+
+par(mar=c(8,8,4,3))
+par(mgp=c(6, 2, 1))
+
+barplot(table$Freq, 
+        horiz=T, 
+        las=2,
+        xlab="Number of Records",
+        ylab="Depth in Meters",
+        names.arg = rev.names.arg
+)
+```
+
+***
+
+##### Boxplot of depth by Genus (`r x`):
+``` {r Depth_Summary_Boxplots_GulfofMexico, echo=FALSE, message=FALSE, warning=FALSE,fig.width=12, fig.height=8}
+qplot(Genus,as.numeric(DepthInMeters), data=data_unfl, geom=c("boxplot"),alpha=I(1), 
+      #main="Depth Distribution of All Taxa in ",
+      xlab="Genus", ylab="Depth (meters)") +
+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_y_continuous(limits = c(0, 5000))
+```
+
+***
+
+##### Histogram of depth distribution (`r x`):   
+``` {r Depth_Histogram_GulfofMexico, echo=FALSE,fig.width=14, fig.height=8}
+# Kernel density plots #
+# grouped by X (indicated by color)
+qplot(as.numeric(MinimumDepthInMeters), data=data_unfl, geom="histogram", alpha=I(.5), fill = Order,
+      xlab="Depth (Meters)", 
+      ylab="Number of Database Records", binwidth = 50) +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_x_continuous(limits = c(0, 3500))
+```
+
+***
+
+##### Distribution of records by Large Marine Ecosystem designation (`r x`):
+``` {r gisLME_GulfofMexico, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLME) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Cross tablulation of Data Provider by VernacularNameCategory (`r x`): 
+``` {r DataProvider-VernacularNameCategory_GulfofMexico, echo=FALSE}
+table <- table(data_unfl$DataProvider,data_unfl$VernacularNameCategory)
+table <- kable(table)
+table
+```
+
+***
+
+##### Ranked list of unique ScientificName (`r x`):
+``` {r Ranked_ScientificName_GulfofMexico, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(ScientificName) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Distribution of database records by named gisLocality (`r x`): 
+``` {r gisLocality_GulfofMexico, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLocality) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+# South Atlantic Region  
+``` {r sub_SouthAtlantic, echo=FALSE}
+new_tbl <-
+  data %>%
+  filter(!is.na(MinimumDepthInMeters),
+         as.numeric(MinimumDepthInMeters) != 999,
+         as.numeric(MinimumDepthInMeters) != -999,
+         !is.na(VernacularNameCategory),
+         gisSouthAtlanticFMC == T)
+
+data_flagged<-new_tbl %>%
+  filter(Flag == "1")
+
+data_unfl<-new_tbl %>%
+  filter(Flag == "0")
+
+x <- "SouthAtlantic"
+```
+
+* Total number of records in the region (flagged + unflagged): **`r length(new_tbl$CatalogNumber)`** 
+
+* Total number of unflagged records: **`r length(data_unfl$CatalogNumber)`**  
+``` {r FlagProportion_SouthAtlantic, echo=FALSE, results='hide'}
+z <- (length(data_flagged$CatalogNumber)/length(new_tbl$CatalogNumber) *100)
+```
+
+* Proportion of records that are flagged: **`r format(round(z, 2), nsmall = 2)`%**
+
+* Total number of unique Scientific Names: **`r length(unique(data_unfl$ScientificName))`**
+
+***
+
+##### Table of the number of database records (n) contributed by each Data Provider (`r x`): 
+``` {r DataProvider_SouthAtlantic, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(DataProvider) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Pie chart of VernacularNameCategory (`r x`): 
+``` {r VerNacularName_Pie_SouthAtlantic, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$VernacularNameCategory, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Taxon Rank (`r x`): 
+``` {r TaxonRank_Pie_SouthAtlantic, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$TaxonRank, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Corals vs. Sponges (`r x`): 
+``` {r Coral_v_Sponge_Pie_SouthAtlantic, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$Phylum, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.8,
+    )
+```
+
+***
+
+##### Depth distribution of database records (`r x`):
+``` {r Depth_Summary_SouthAtlantic, echo=FALSE, message=FALSE, warning=FALSE}
+# cut the depth vector and then barplot (varying bins) 
+groups = cut(data_unfl$gisDepth, breaks=c(0,50,100,200,500,1000,5000), include.lowest=TRUE)
+
+#bygroup = tapply(data$gisDepth, groups)
+table<-table(groups)
+table<-as.data.frame(table)
+table <- table[rev(order(row.names(table))),]
+
+names.arg = c("0-50","50-100","100-200", "200-500", "500-1000", ">1000")
+rev.names.arg= rev(names.arg)
+
+par(mar=c(8,8,4,3))
+par(mgp=c(6, 2, 1))
+
+barplot(table$Freq, 
+        horiz=T, 
+        las=2,
+        xlab="Number of Records",
+        ylab="Depth in Meters",
+        names.arg = rev.names.arg
+)
+```
+
+***
+
+##### Boxplot of depth by Genus (`r x`):
+``` {r Depth_Summary_Boxplots_SouthAtlantic, echo=FALSE, message=FALSE, warning=FALSE,fig.width=12, fig.height=8}
+qplot(Genus,as.numeric(DepthInMeters), data=data_unfl, geom=c("boxplot"),alpha=I(1), 
+      #main="Depth Distribution of All Taxa in ",
+      xlab="Genus", ylab="Depth (meters)") +
+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_y_continuous(limits = c(0, 5000))
+```
+
+***
+
+##### Histogram of depth distribution (`r x`):   
+``` {r Depth_Histogram_SouthAtlantic, echo=FALSE,fig.width=14, fig.height=8}
+# Kernel density plots #
+# grouped by X (indicated by color)
+qplot(as.numeric(MinimumDepthInMeters), data=data_unfl, geom="histogram", alpha=I(.5), fill = Order,
+      xlab="Depth (Meters)", 
+      ylab="Number of Database Records", binwidth = 50) +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_x_continuous(limits = c(0, 3500))
+```
+
+***
+
+##### Distribution of records by Large Marine Ecosystem designation (`r x`):
+``` {r gisLME_SouthAtlantic, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLME) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Cross tablulation of Data Provider by VernacularNameCategory (`r x`): 
+``` {r DataProvider-VernacularNameCategory_SouthAtlantic, echo=FALSE}
+table <- table(data_unfl$DataProvider,data_unfl$VernacularNameCategory)
+table <- kable(table)
+table
+```
+
+***
+
+##### Ranked list of unique ScientificName (`r x`):
+``` {r Ranked_ScientificName_SouthAtlantic, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(ScientificName) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Distribution of database records by named gisLocality (`r x`): 
+``` {r gisLocality_SouthAtlantic, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLocality) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+# Caribbean Region  
+``` {r sub_Caribbean, echo=FALSE}
+new_tbl <-
+  data %>%
+  filter(!is.na(MinimumDepthInMeters),
+         as.numeric(MinimumDepthInMeters) != 999,
+         as.numeric(MinimumDepthInMeters) != -999,
+         !is.na(VernacularNameCategory),
+         gisCaribbeanFMC == T)
+
+data_flagged<-new_tbl %>%
+  filter(Flag == "1")
+
+data_unfl<-new_tbl %>%
+  filter(Flag == "0")
+
+x <- "Caribbean"
+```
+
+* Total number of records in the region (flagged + unflagged): **`r length(new_tbl$CatalogNumber)`** 
+
+* Total number of unflagged records: **`r length(data_unfl$CatalogNumber)`**  
+``` {r FlagProportion_Caribbean, echo=FALSE, results='hide'}
+z <- (length(data_flagged$CatalogNumber)/length(new_tbl$CatalogNumber) *100)
+```
+
+* Proportion of records that are flagged: **`r format(round(z, 2), nsmall = 2)`%**
+
+* Total number of unique Scientific Names: **`r length(unique(data_unfl$ScientificName))`**
+
+***
+
+##### Table of the number of database records (n) contributed by each Data Provider (`r x`): 
+``` {r DataProvider_Caribbean, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(DataProvider) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Pie chart of VernacularNameCategory (`r x`): 
+``` {r VerNacularName_Pie_Caribbean, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$VernacularNameCategory, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Taxon Rank (`r x`): 
+``` {r TaxonRank_Pie_Caribbean, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$TaxonRank, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Corals vs. Sponges (`r x`): 
+``` {r Coral_v_Sponge_Pie_Caribbean, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$Phylum, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.8,
+    )
+```
+
+***
+
+##### Depth distribution of database records (`r x`):
+``` {r Depth_Summary_Caribbean, echo=FALSE, message=FALSE, warning=FALSE}
+# cut the depth vector and then barplot (varying bins) 
+groups = cut(data_unfl$gisDepth, breaks=c(0,50,100,200,500,1000,5000), include.lowest=TRUE)
+
+#bygroup = tapply(data$gisDepth, groups)
+table<-table(groups)
+table<-as.data.frame(table)
+table <- table[rev(order(row.names(table))),]
+
+names.arg = c("0-50","50-100","100-200", "200-500", "500-1000", ">1000")
+rev.names.arg= rev(names.arg)
+
+par(mar=c(8,8,4,3))
+par(mgp=c(6, 2, 1))
+
+barplot(table$Freq, 
+        horiz=T, 
+        las=2,
+        xlab="Number of Records",
+        ylab="Depth in Meters",
+        names.arg = rev.names.arg
+)
+```
+
+***
+
+##### Boxplot of depth by Genus (`r x`):
+``` {r Depth_Summary_Boxplots_Caribbean, echo=FALSE, message=FALSE, warning=FALSE,fig.width=12, fig.height=8}
+qplot(Genus,as.numeric(DepthInMeters), data=data_unfl, geom=c("boxplot"),alpha=I(1), 
+      #main="Depth Distribution of All Taxa in ",
+      xlab="Genus", ylab="Depth (meters)") +
+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_y_continuous(limits = c(0, 5000))
+```
+
+***
+
+##### Histogram of depth distribution (`r x`):   
+``` {r Depth_Histogram_Caribbean, echo=FALSE,fig.width=14, fig.height=8}
+# Kernel density plots #
+# grouped by X (indicated by color)
+qplot(as.numeric(MinimumDepthInMeters), data=data_unfl, geom="histogram", alpha=I(.5), fill = Order,
+      xlab="Depth (Meters)", 
+      ylab="Number of Database Records", binwidth = 50) +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_x_continuous(limits = c(0, 3500))
+```
+
+***
+
+##### Distribution of records by Large Marine Ecosystem designation (`r x`):
+``` {r gisLME_Caribbean, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLME) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Cross tablulation of Data Provider by VernacularNameCategory (`r x`): 
+``` {r DataProvider-VernacularNameCategory_Caribbean, echo=FALSE}
+table <- table(data_unfl$DataProvider,data_unfl$VernacularNameCategory)
+table <- kable(table)
+table
+```
+
+***
+
+##### Ranked list of unique ScientificName (`r x`):
+``` {r Ranked_ScientificName_Caribbean, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(ScientificName) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Distribution of database records by named gisLocality (`r x`): 
+``` {r gisLocality_Caribbean, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLocality) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+# Mid-Atlantic Region  
+``` {r sub_MidAtlantic, echo=FALSE}
+new_tbl <-
+  data %>%
+  filter(!is.na(MinimumDepthInMeters),
+         as.numeric(MinimumDepthInMeters) != 999,
+         as.numeric(MinimumDepthInMeters) != -999,
+         !is.na(VernacularNameCategory),
+         gisMidAtlanticFMC == T)
+
+data_flagged<-new_tbl %>%
+  filter(Flag == "1")
+
+data_unfl<-new_tbl %>%
+  filter(Flag == "0")
+
+x <- "MidAtlantic"
+```
+
+* Total number of records in the region (flagged + unflagged): **`r length(new_tbl$CatalogNumber)`** 
+
+* Total number of unflagged records: **`r length(data_unfl$CatalogNumber)`**  
+``` {r FlagProportion_MidAtlantic, echo=FALSE, results='hide'}
+z <- (length(data_flagged$CatalogNumber)/length(new_tbl$CatalogNumber) *100)
+```
+
+* Proportion of records that are flagged: **`r format(round(z, 2), nsmall = 2)`%**
+
+* Total number of unique Scientific Names: **`r length(unique(data_unfl$ScientificName))`**
+
+***
+
+##### Table of the number of database records (n) contributed by each Data Provider (`r x`): 
+``` {r DataProvider_MidAtlantic, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(DataProvider) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Pie chart of VernacularNameCategory (`r x`): 
+``` {r VerNacularName_Pie_MidAtlantic, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$VernacularNameCategory, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Taxon Rank (`r x`): 
+``` {r TaxonRank_Pie_MidAtlantic, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$TaxonRank, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Corals vs. Sponges (`r x`): 
+``` {r Coral_v_Sponge_Pie_MidAtlantic, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$Phylum, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.8,
+    )
+```
+
+***
+
+##### Depth distribution of database records (`r x`):
+``` {r Depth_Summary_MidAtlantic, echo=FALSE, message=FALSE, warning=FALSE}
+# cut the depth vector and then barplot (varying bins) 
+groups = cut(data_unfl$gisDepth, breaks=c(0,50,100,200,500,1000,5000), include.lowest=TRUE)
+
+#bygroup = tapply(data$gisDepth, groups)
+table<-table(groups)
+table<-as.data.frame(table)
+table <- table[rev(order(row.names(table))),]
+
+names.arg = c("0-50","50-100","100-200", "200-500", "500-1000", ">1000")
+rev.names.arg= rev(names.arg)
+
+par(mar=c(8,8,4,3))
+par(mgp=c(6, 2, 1))
+
+barplot(table$Freq, 
+        horiz=T, 
+        las=2,
+        xlab="Number of Records",
+        ylab="Depth in Meters",
+        names.arg = rev.names.arg
+)
+```
+
+***
+
+##### Boxplot of depth by Genus (`r x`):
+``` {r Depth_Summary_Boxplots_MidAtlantic, echo=FALSE, message=FALSE, warning=FALSE,fig.width=12, fig.height=8}
+qplot(Genus,as.numeric(DepthInMeters), data=data_unfl, geom=c("boxplot"),alpha=I(1), 
+      #main="Depth Distribution of All Taxa in ",
+      xlab="Genus", ylab="Depth (meters)") +
+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_y_continuous(limits = c(0, 5000))
+```
+
+***
+
+##### Histogram of depth distribution (`r x`):   
+``` {r Depth_Histogram_MidAtlantic, echo=FALSE,fig.width=14, fig.height=8}
+# Kernel density plots #
+# grouped by X (indicated by color)
+qplot(as.numeric(MinimumDepthInMeters), data=data_unfl, geom="histogram", alpha=I(.5), fill = Order,
+      xlab="Depth (Meters)", 
+      ylab="Number of Database Records", binwidth = 50) +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_x_continuous(limits = c(0, 3500))
+```
+
+***
+
+##### Distribution of records by Large Marine Ecosystem designation (`r x`):
+``` {r gisLME_MidAtlantic, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLME) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Cross tablulation of Data Provider by VernacularNameCategory (`r x`): 
+``` {r DataProvider-VernacularNameCategory_MidAtlantic, echo=FALSE}
+table <- table(data_unfl$DataProvider,data_unfl$VernacularNameCategory)
+table <- kable(table)
+table
+```
+
+***
+
+##### Ranked list of unique ScientificName (`r x`):
+``` {r Ranked_ScientificName_MidAtlantic, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(ScientificName) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Distribution of database records by named gisLocality (`r x`): 
+``` {r gisLocality_MidAtlantic, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLocality) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+# NewEngland Region  
+``` {r sub_NewEngland, echo=FALSE}
+new_tbl <-
+  data %>%
+  filter(!is.na(MinimumDepthInMeters),
+         as.numeric(MinimumDepthInMeters) != 999,
+         as.numeric(MinimumDepthInMeters) != -999,
+         !is.na(VernacularNameCategory),
+         gisNewEnglandFMC == T)
+
+data_flagged<-new_tbl %>%
+  filter(Flag == "1")
+
+data_unfl<-new_tbl %>%
+  filter(Flag == "0")
+
+x <- "NewEngland"
+```
+
+* Total number of records in the region (flagged + unflagged): **`r length(new_tbl$CatalogNumber)`** 
+
+* Total number of unflagged records: **`r length(data_unfl$CatalogNumber)`**  
+``` {r FlagProportion_NewEngland, echo=FALSE, results='hide'}
+z <- (length(data_flagged$CatalogNumber)/length(new_tbl$CatalogNumber) *100)
+```
+
+* Proportion of records that are flagged: **`r format(round(z, 2), nsmall = 2)`%**
+
+* Total number of unique Scientific Names: **`r length(unique(data_unfl$ScientificName))`**
+
+***
+
+##### Table of the number of database records (n) contributed by each Data Provider (`r x`): 
+``` {r DataProvider_NewEngland, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(DataProvider) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Pie chart of VernacularNameCategory (`r x`): 
+``` {r VerNacularName_Pie_NewEngland, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$VernacularNameCategory, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Taxon Rank (`r x`): 
+``` {r TaxonRank_Pie_NewEngland, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$TaxonRank, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.3,
+    )
+```
+
+***
+
+##### Pie chart of Corals vs. Sponges (`r x`): 
+``` {r Coral_v_Sponge_Pie_NewEngland, echo=FALSE, message=FALSE, warning=FALSE}
+
+par(mar=c(0,0,0,0))
+par(mgp=c(0, 0, 0))
+mytable <- table(data_unfl$Phylum, useNA = "always")
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, cex = 0.8,
+    )
+```
+
+***
+
+##### Depth distribution of database records (`r x`):
+``` {r Depth_Summary_NewEngland, echo=FALSE, message=FALSE, warning=FALSE}
+# cut the depth vector and then barplot (varying bins) 
+groups = cut(data_unfl$gisDepth, breaks=c(0,50,100,200,500,1000,5000), include.lowest=TRUE)
+
+#bygroup = tapply(data$gisDepth, groups)
+table<-table(groups)
+table<-as.data.frame(table)
+table <- table[rev(order(row.names(table))),]
+
+names.arg = c("0-50","50-100","100-200", "200-500", "500-1000", ">1000")
+rev.names.arg= rev(names.arg)
+
+par(mar=c(8,8,4,3))
+par(mgp=c(6, 2, 1))
+
+barplot(table$Freq, 
+        horiz=T, 
+        las=2,
+        xlab="Number of Records",
+        ylab="Depth in Meters",
+        names.arg = rev.names.arg
+)
+```
+
+***
+
+##### Boxplot of depth by Genus (`r x`):
+``` {r Depth_Summary_Boxplots_NewEngland, echo=FALSE, message=FALSE, warning=FALSE,fig.width=12, fig.height=8}
+qplot(Genus,as.numeric(DepthInMeters), data=data_unfl, geom=c("boxplot"),alpha=I(1), 
+      #main="Depth Distribution of All Taxa in ",
+      xlab="Genus", ylab="Depth (meters)") +
+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_y_continuous(limits = c(0, 5000))
+```
+
+***
+
+##### Histogram of depth distribution (`r x`):   
+``` {r Depth_Histogram_NewEngland, echo=FALSE,fig.width=14, fig.height=8}
+# Kernel density plots #
+# grouped by X (indicated by color)
+qplot(as.numeric(MinimumDepthInMeters), data=data_unfl, geom="histogram", alpha=I(.5), fill = Order,
+      xlab="Depth (Meters)", 
+      ylab="Number of Database Records", binwidth = 50) +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.05)) +
+  scale_x_continuous(limits = c(0, 3500))
+```
+
+***
+
+##### Distribution of records by Large Marine Ecosystem designation (`r x`):
+``` {r gisLME_NewEngland, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLME) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Cross tablulation of Data Provider by VernacularNameCategory (`r x`): 
+``` {r DataProvider-VernacularNameCategory_NewEngland, echo=FALSE}
+table <- table(data_unfl$DataProvider,data_unfl$VernacularNameCategory)
+table <- kable(table)
+table
+```
+
+***
+
+##### Ranked list of unique ScientificName (`r x`):
+``` {r Ranked_ScientificName_NewEngland, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(ScientificName) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
+***
+
+##### Distribution of database records by named gisLocality (`r x`): 
+``` {r gisLocality_NewEngland, echo=FALSE}
+sum_tbl <-
+  data_unfl %>%
+  group_by(gisLocality) %>%
+  summarize(
+    #min.Depth = min(as.numeric(MinimumDepthInMeters)),
+    #max.Depth = max(as.numeric(MinimumDepthInMeters)), 
+    #mean.Depth = mean(as.numeric(MinimumDepthInMeters)),
+    #mean.DepthGIS = mean(as.numeric(gisDepth)),
+    n = n()) %>%
+  arrange(desc(n))
+sum_tbl <- kable(sum_tbl, row.names = F, digits = 2)
+sum_tbl
+```
+
