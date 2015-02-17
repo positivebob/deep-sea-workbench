@@ -29,6 +29,8 @@ library(gdata)
 library(stringr)
 #install.packages("rgdal")
 library(rgdal)
+library(ggmap)
+library(plyr)
 
 ##### Reading in Original Data #####
 options(stringsAsFactors=FALSE)
@@ -808,8 +810,7 @@ unique(bowlby$ObservationDate)
 write.table(bowlby,"DSCRTP_NatDB_20141002-1_Ed_Bowlby_subset.txt", row.names = F, quote = F, sep = "\t")
 
 
-
-##### ___________________________________##### 
+##### NEWDATA ___________________________________##### 
 
 ##### Bringing new data Merideth Everett 2014-12-01  ##### 
 options(stringsAsFactors=FALSE)
@@ -969,7 +970,7 @@ AphiaRecords<-getFullRecord(MySpecList$AccTaxID)
 # MySpecList
 
 #join Worms records back to original data
-join <- merge(x = op, y = AphiaRecords, by.x = "ScientificName", by.y = "scientificname", all = TRUE)
+join <- merge(x = op, y = AphiaRecords, by.x = "ScientificName", by.y = "scientificname", all.x = TRUE)
 join <- join %>% 
   mutate(WormsID = AphiaID, 
          ScientificNameAuthorship = valid_authority, 
@@ -984,14 +985,28 @@ join <- join %>%
          Order, Family, Genus, TaxonRank, -(AphiaID:modified))
        
 names(join)
-table(join$valid_authority)
+table(join$ScientificNameAuthorship)
 op<-join
+
+#testing master 
+join <- merge(x = op, y = taxmaster, by.x = "ScientificName", by.y = "ScientificName", all.x = T)
+
+length(join$Genus.x)
+length(join$Genus.y)
+names(join)
 
 ##### Flagging ####
 names(op)
 op$Flag <- "0"
 save(op, file = "op.RData")
 
+#checking
+op$Flag
+
+#####fixing names ##### 
+names(d)
+setdiff(names(d), names(op))
+setdiff(names(op), names(d))
 
 ##### ___________________________________##### 
 
@@ -1896,8 +1911,6 @@ rm(z)
 ##### Removing the extra gis variables that don't matter any more ##### 
 data <- data[,-c(94:97)]
 
-
-
 #####_______________________________######
 
 ##### Saving entire workspace #####
@@ -1947,6 +1960,8 @@ table(curt$DataContact, useNA = "always")
 table(curt$Citation, useNA = "always")
 table(curt$SampleID, useNA = "always")
 
+##### NEWDATA __________________________#####
+
 ##### read in new Curt Whitmire data ##### 
 options(stringsAsFactors=FALSE)
 whitmire<-read.csv("WCGBTS_2001_13_DSCS_forDSCRTP.csv")
@@ -1981,20 +1996,27 @@ save(whitmire, file = "whitmire.RData")
 #####_______________________________######
 
 ##### Fixing problem with an errant Flag indicator #####
+load("C:/rworking/deep-sea-workbench/OutData/d.RData")
 d[d$Flag == "l" & is.na(d$Flag) == F,]$Flag <- "1"
 save(d, file = "d.RData")
 
-##### adding the whitmire data to the original dataset ##### 
+##### Adding the whitmire data to the original dataset ##### 
 #NOTE: Creating D2 which is a temporary file.
 # binding rows together
+load("C:/rworking/deep-sea-workbench/OutData/d2.RData")
 d2 <- rbind(d, whitmire)
 table(d2$Flag)
 
-##### adding the Merideth's Observer Program data to the mix ######
-d2 <- rbind.fill(d2, op)
+##### Adding the Merideth's Observer Program data to the mix ######
+load("C:/rworking/deep-sea-workbench/OutData/op.RData")
+d3 <- rbind.fill(d2, op)
 save(d2, file = "d2.RData")
 
-##### creating a new spatial points data frame ##### 
+##### Adding the taxinomic master list #####
+options(stringsAsFactors=FALSE)
+taxmaster<-read.csv("./InData/tax_master.csv", header = T, na.strings = "")
+
+##### Creating a new spatial points data frame ##### 
 
 xy <- c("Longitude", "Latitude")
 coords<-d2[d2$Flag == "0", c(xy)]
@@ -2013,7 +2035,7 @@ spdf<-SpatialPointsDataFrame(coords, d2data,
 
 names(spdf)
 
-##### creating a new variable called gisPacificFMC ##### 
+##### Creating a new variable called gisPacificFMC ##### 
 load("C:/rworking/DeepSeaData20150128/pacific.RData")
 z<-over(spdf, pacific)
 names(z)
@@ -2095,6 +2117,8 @@ table(data$DataProvider, useNA = "always")
 table(gorg$Suborder, useNA = "always")
 table(gorg$Family, useNA = "always")
 write.csv(gorg,"gorg.csv")
+
+
 
 
 
