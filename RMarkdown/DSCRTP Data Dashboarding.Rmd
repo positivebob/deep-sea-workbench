@@ -11,6 +11,7 @@ output: html_document
 
 ***
 
+
 ```{r load_data_and_packages,echo=FALSE,message=FALSE, warning=FALSE}
 load("C:/rworking/DeepSeaData20150128/data.noflag.RData")
 data<-data
