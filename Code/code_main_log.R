@@ -5,7 +5,6 @@
 #Institution:  NOAA - CCEHBR
 #Place: Charleston, SC
 
-
 ##### Installation/Loading of Packages #####
 #install.packages("maptools")
 library(maptools)
@@ -33,20 +32,26 @@ library(rgdal)
 library(ggmap)
 library(plyr)
 
+##### ____________ NEWDATA: Loading database version 201407311 #####
+
 ##### Reading in Original Data #####
 options(stringsAsFactors=FALSE)
 d<-read.csv("DSC-RTP_Nat_DBS_20140731-1.csv")
-d6<-read.csv("a006.csv")
+
+##### _____OUTPUT: "d" ######
+
+##### ____________ GeoSubsetting #####
 
 ##### Geographic subsetting to Gulf of Mexico (R code for data distribution to Katie Crane) ##### 
-d2<- subset(d, as.numeric(latitude) > 20 & 
+geosub<- subset(d, as.numeric(latitude) > 20 & 
                            as.numeric(latitude) < 35 & 
                            as.numeric(longitude) < -75 &
                            as.numeric(longitude) > -97, )
 ##### Subsetting to only flagged fields = 0
-d2<- subset(d2, flag == 0, )
+geosub<- subset(geosub, flag == 0, )
 
-#### Writing data for release
+#####_____ OUTPUT: "DSC-RTP_Nat_DBS_GoMexSubset_20140731-1.csv"
+#### Writing data for release #####
 write.csv(d2, "DSC-RTP_Nat_DBS_GoMexSubset_20140731-1.csv")
 
 ##### Checking data and GIS component GOMEX 
@@ -55,6 +60,10 @@ gis<-subset(d2, ,c(latitude, longitude, dataprovider))
 write.csv(gis, "gis.csv")
 x<-subset(d2, dataprovider == "NOAA, Northeast Fisheries Science Center", c(catalognumber, dataprovider))
 write.csv(x, "test.csv")
+
+##### _____ OUTPUT:"DSC-RTP_Nat_DBS_GoMexSubset_20140731-1.csv" #####
+
+##### ____________ Working on Bugs #####
 
 ##### Looking at some problems in navtype ##### 
 subset(d, dataprovider == "NOAA, Cordell Bank National Marine Sanctuary", c(catalognumber, navtype))
@@ -291,7 +300,8 @@ names(d)
 #writing out tab delimited version of db
 write.table(d,"DSCRTP_NatDB_20140804-1.txt", row.names = F, quote = F, sep = "\t")
 
-##### Start working on next version ##### 
+##### ____________NEWDATA: 20140808-1 ##### 
+
 # Starting from  version 20140804-1 going to version 20140808-1
 
 ##### bug 72 - flagged #####
@@ -522,8 +532,7 @@ save.image("H:/rworking/20140731-1/.RData")
 ##### Writing DSCRTP_NatDB_20140808-1.txt"
 write.table(d,"DSCRTP_NatDB_20140808-1.txt", row.names = F, quote = F, sep = "\t")
 
-#####
-#Troubleshooting problem with field order and naming.  
+######Troubleshooting problem with field order and naming.  
 d <-rename(d, c("phylum" = "taxonphylum"))
 d <-rename(d, c("class" = "taxonclass"))
 d <-rename(d, c("subclass"="taxonsubclass"))
@@ -543,8 +552,7 @@ d <-rename(d, c("samplingequipment" = "samplingprotocol"))
 setdiff(fofile, names(d))
 d <- d[,c(fofile)]
 
-#####
-#write and save new table (date: 20140812 at 11AM)
+######write and save new table (date: 20140812 at 11AM)######
 write.table(d,"DSCRTP_NatDB_20140808-1_orderchange.txt", row.names = F, quote = F, sep = "\t")
 save.image("H:/rworking/20140731-1/.RData")
 
@@ -562,8 +570,7 @@ save.image("H:/rworking/20140731-1/.RData")
 # > setdiff(names(d), fofile)
 # character(0)
 
-#####
-# Experiment for running down bug number 91 - encoding issues for special characters.  
+##### Experiment for running down bug number 91 - encoding issues for special characters.  #####
 write.table(d,"DSCRTP_NatDB_20140808-1_orderchange_encoding.txt", row.names = F, quote = F, sep = "\t", fileEncoding = "UTF-16LE")
 
 table(Encoding(data$DataProvider))
@@ -573,9 +580,7 @@ subset(data, grepl("Kölliker", data$ScientificNameAuthorship), c(CatalogNumber,
 
 write.table(subset(data, grepl("Kölliker", data$scientificnameauthorship), c(CatalogNumber, ScientificNameAuthorship)), "encodingtest.txt", row.names = F, quote = F, sep = "\t")
 
-##### 
-
-#Bug 4 - missing vernacularnamecategory issues #####
+##### #Bug 4 - missing vernacularnamecategory issues #####
 # writing out a version of the file for Tom to review
 write.csv(subset(d, ,c(catalognumber, scientificname, taxonorder, taxonfamily, taxongenus, taxonspecies, vernacularname, vernacularnamecategory)),"vernacularnamecategory.csv")
 
@@ -614,8 +619,7 @@ d[d$catalognumber == "417186",]$flagreason <- "Delete per Tom Hourigan 20140813"
 write.table(d,"DSCRTP_NatDB_20140813-1.txt", row.names = F, quote = F, sep = "\t")
 save.image("H:/rworking/20140731-1/.RData")
 
-##### 
-# Distribution to John Manderson of NOAA
+###### Distribution to John Manderson of NOAA ##### 
 # Picking only unflagged records
 dflag<-subset(d, flag == 0, )
 # Write the table.  
@@ -633,8 +637,7 @@ dflag_geo<-subset(dflag, as.numeric(latitude) > 15 &
 write.table(dflag_geo,"DSCRTP_NatDB_20140813-1_unflagged_geosubset.txt", row.names = F, quote = F, sep = "\t")
 save.image("H:/rworking/20140731-1/.RData")
 
-##### 
-# Bug 164:exploring issue with missing fishcouncilregion "South-Atlantic"
+##### # Bug 164:exploring issue with missing fishcouncilregion "South-Atlantic" ######
 names(d)
 unique(d$fishcouncilregion)
 length(subset(d,gisregion == "South-Atlantic", c(gisregion))$gisregion)
@@ -645,9 +648,14 @@ d[d$gisregion == "South-Atlantic"
   & is.na(d$fishcouncilregion) == T
   & is.na(d$gisregion) == F, c("fishcouncilregion", "gisregion")]$fishcouncilregion <- "South-Atlantic"
 
-#####
-#write and save new table.  this table (date: 20140929 at 4PM)
+
+
+##### #write and save new table. his table (date: 20140929 at 4PM) ###### 
 write.table(d,"DSCRTP_NatDB_20140929-1.txt", row.names = F, quote = F, sep = "\t")
+
+##### _____ OUTPUT: "DSCRTP_NatDB_20140929-1.txt" ######
+
+##### ____________NEWDATA: from Tom review #####
 
 ##### read in Tom's dataset #####
 tdata<-read.delim("DSCRTP_NatDB_20140813-2.txt", header = TRUE, sep = "\t", quote = "\"",
@@ -658,7 +666,7 @@ tdata[tdata$gisregion == "South-Atlantic"
   & is.na(tdata$FishCouncilRegion) == T
   & is.na(tdata$gisregion) == F, c("FishCouncilRegion", "gisregion")]#$FishCouncilRegion <- "South-Atlantic"
 
-###### explore the dataset #####
+###### _____________ Frequency table and ordered bar chart module #####
 z="StationID"
 x<-which(colnames(tdata)==z)
 
@@ -670,6 +678,8 @@ head(xout[order(-xout$Freq), ], n=100)
 par(mar=c(10,20,5,10))
 y <- barplot(unique(sort(table(tdata[x], useNA="always"))), 
              las=2, cex.names=.5, horiz=TRUE, main=z)
+
+##### ____________ fixing more bugs ######
 
 ##### Bug 167 - missing Phylum ##### 
 tdata[is.na(tdata$Phylum) == T, c("CatalogNumber", "Phylum", "ScientificName", "ScientificNameAuthorship")]$Phylum <- "Cnidaria"
@@ -810,8 +820,177 @@ unique(bowlby$DataContact)
 unique(bowlby$ObservationDate)
 write.table(bowlby,"DSCRTP_NatDB_20141002-1_Ed_Bowlby_subset.txt", row.names = F, quote = F, sep = "\t")
 
+#####___________ NEW DATA: Other sea pen data from Merideth Everett #####
 
-##### NEWDATA ___________________________________##### 
+##### loading the data #####
+options(stringsAsFactors=FALSE)
+osp<-read.table("./InData/Sea_Pens_DSC_DB-Updated_MEverett_20141124_rmcguinn_seapens_other_sources.txt", sep = "\t", header = T)
+
+##### #finding and changing the column names in the new dataset that do not match. ##### 
+setdiff(names(osp), names(d2))
+names(osp)
+
+z = "IdentifiedBy.Verified"
+x <-which(colnames(osp) == z)
+colnames(osp)[x] <- "IdentifiedBy"
+
+z = "DecimalLatitude"
+x <-which(colnames(osp) == z)
+colnames(osp)[x] <- "Latitude"
+
+z = "DecimalLongitude"
+x <-which(colnames(osp) == z)
+colnames(osp)[x] <- "Longitude"
+
+###### Making all variables in new dataset be character strings  ###### 
+osp <- data.frame(lapply(osp, as.character), stringsAsFactors=FALSE)
+
+##### Filling in where ObservationDate is missing with NA values  ######
+osp$ObservationDate[op$ObservationDate == ""] <- NA
+
+##### Changing ObservationDate to the right date format  #####
+
+#trimming white space
+trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+osp$ObservationDate <- trim(osp$ObservationDate)
+
+#making some manual changes
+fix(osp)
+
+#changing ObservationDate to a true date class
+test<-
+osp$ObservationDate <- as.Date(osp$ObservationDate, "%m/%d/%Y")
+table(osp$ObservationDate, useNA = c("always"))
+
+#testing a way to get back to GMT.  
+# y<-z
+# y
+# y<-paste(y, "-0800" ,sep = "")
+# y
+# 
+# test<-paste(op$ObservationDate, y, sep = " ")
+# test
+# test2<-strptime(test, "%Y-%m-%d %I:%M:%S%z")
+# test2
+# tail(test, n=10)
+# tail(test2, n=10)
+# 
+# y<-substr(strptime(y, "%I:%M:%S%z"),12,100) 
+# #y<-strptime(y, "%I:%M:%S%z")
+# y
+# 
+# tail(op$ObservationTime, n=10)
+# tail(y, n=10)
+# 
+# class(y)
+# as.Date(y)
+
+##### Assign AphiaID and Species List ##### 
+Load library, process WSDL and prepare R SOAP functions
+install.packages("XML", dependencies = TRUE)
+download.file("http://www.omegahat.org/Prerelease/XMLSchema_0.8-0.tar.gz", "XMLSchema")
+install.packages("XMLSchema", type="source", repos = NULL)
+download.file("http://www.omegahat.org/Prerelease/SSOAP_0.91-0.tar.gz", "SSOAP")
+install.packages("SSOAP", type="source", repos = NULL)
+library(SSOAP)
+w = processWSDL("http://www.marinespecies.org/aphia.php?p=soap&wsdl=1")
+iface = genSOAPClientInterface(, w)
+
+#recode any problems with osp ScientificName
+osp$ScientificName[osp$ScientificName == "Halipteris sp."] <- "Halipteris"
+osp$ScientificName[osp$ScientificName == "Halipteris sp"] <- "Halipteris"
+osp$ScientificName[osp$ScientificName == "Umbellula sp."] <- "Umbellula"
+
+# Create your specieslist
+MySpecies<-c(unique(osp$ScientificName))
+MySpecies<-data.frame(MySpecies)
+MySpecList<-data.frame(unique(MySpecies))
+MySpecList
+
+
+# Get original AphiaID's for specieslist 
+AphiaMatch <- function(x) { 
+  result<-NULL
+  for (i in 1:length(x)) {
+    AphiaRecord <- iface@functions$getAphiaID(x[i],1,('http://www.marinespecies.org/aphia.php?p=soap')) 
+    result<-c(result, AphiaRecord)
+  }
+  return(result)
+}
+MySpecList$OrigTaxID<-AphiaMatch(MySpecList$MySpecies)
+MySpecList
+
+# Get accepted synonym AphiaID's for specieslist 
+
+SynResolv <- function(x) { 
+  result<-NULL
+  for (i in 1:length(x)) {
+    AphiaRecord <- iface@functions$getAphiaRecordByID(x[i],('http://www.marinespecies.org/aphia.php?p=soap')) 
+    result<-c(result, slot(AphiaRecord, "valid_AphiaID"))
+  }
+  return(result)
+}
+MySpecList$AccTaxID<-SynResolv(MySpecList$OrigTaxID)
+MySpecList
+
+# Add full record information (classification, ranking, authority,...)
+
+getFullRecord <- function(x) { 
+  result<-NULL
+  for (i in 1:length(x)) {
+    AphiaRecord <- iface@functions$getAphiaRecordByID(x[i],('http://www.marinespecies.org/aphia.php?p=soap')) 
+    slotnames <- slotNames(AphiaRecord)
+    slotlist <- data.frame(rbind(1:length(slotnames)))
+    names(slotlist) <- slotnames
+    for(y in slotnames) {
+      #R cannot handle a slot name "class"
+      if (y == "CLASS") {slotlist[1,y] <- '(empty)'}
+      else {slotlist[1, y] <- slot(AphiaRecord,  y)}
+    }
+    result<-rbind(result, slotlist)
+  }
+  return(result)
+}
+AphiaRecords<-getFullRecord(MySpecList$AccTaxID)
+names(AphiaRecords)
+
+# Assign full information back to species list
+# MySpecList<-cbind(MySpecList, AphiaRecords)
+# MySpecList
+
+#join Worms records back to original data
+join <- merge(x = osp, y = AphiaRecords, by.x = "ScientificName", by.y = "scientificname", all.x = TRUE)
+join <- join %>% 
+  mutate(WormsID = AphiaID, 
+         ScientificNameAuthorship = valid_authority, 
+         Phylum = phylum,
+         Class = CLASS, 
+         Order = order,
+         Family = family,
+         Genus = genus,
+         TaxonRank = rank) %>% 
+  select((ScientificName:SampleID), 
+         ScientificNameAuthorship, Phylum, Class, 
+         Order, Family, Genus, TaxonRank, -(AphiaID:modified))
+names(join)
+table(join$ScientificNameAuthorship)
+osp<-join
+
+
+##### Flagging ####
+names(osp)
+osp$Flag <- "0"
+save(osp, file = "./OutData/osp.RData")
+
+#checking
+osp$Flag
+
+#####fixing names ##### 
+names(d)
+setdiff(names(d), names(osp))
+setdiff(names(osp), names(d))
+
+##### ___________ NEW DATA: Observer Program data (Merideth Everett) ##### 
 
 ##### Bringing new data Merideth Everett 2014-12-01  ##### 
 options(stringsAsFactors=FALSE)
@@ -906,7 +1085,7 @@ op
 # as.Date(y)
 
 ##### Assign AphiaID and Species List ##### 
-# Load library, process WSDL and prepare R SOAP functions
+Load library, process WSDL and prepare R SOAP functions
 install.packages("XML", dependencies = TRUE)
 download.file("http://www.omegahat.org/Prerelease/XMLSchema_0.8-0.tar.gz", "XMLSchema")
 install.packages("XMLSchema", type="source", repos = NULL)
@@ -920,9 +1099,9 @@ iface = genSOAPClientInterface(, w)
 MySpecies<-c(unique(op$ScientificName))
 MySpecies<-data.frame(MySpecies)
 MySpecList<-data.frame(unique(MySpecies))
+MySpecList
 
 # Get original AphiaID's for specieslist 
-
 AphiaMatch <- function(x) { 
   result<-NULL
   for (i in 1:length(x)) {
@@ -966,6 +1145,8 @@ getFullRecord <- function(x) {
   return(result)
 }
 AphiaRecords<-getFullRecord(MySpecList$AccTaxID)
+names(AphiaRecords)
+
 # Assign full information back to species list
 # MySpecList<-cbind(MySpecList, AphiaRecords)
 # MySpecList
@@ -984,7 +1165,6 @@ join <- join %>%
   select((ScientificName:SampleID), 
          ScientificNameAuthorship, Phylum, Class, 
          Order, Family, Genus, TaxonRank, -(AphiaID:modified))
-       
 names(join)
 table(join$ScientificNameAuthorship)
 op<-join
@@ -1009,7 +1189,75 @@ names(d)
 setdiff(names(d), names(op))
 setdiff(names(op), names(d))
 
-##### ___________________________________##### 
+#####_____Sub Module: getting subclass and suborder infomration from Worms to add to OP #####
+
+##### defining a function to get the full taxonomic listing from World Registry of Marine Species #####
+getFullList <- function(x) {
+  iface@functions$getAphiaClassificationByID(x,('http://www.marinespecies.org/aphia.php?p=soap')) 
+}
+
+##### use lapply to feed an integer vector of AphiaID's to the taxonomic #####
+classificationObject<-lapply(FUN = getFullList, MySpecList$AccTaxID)
+
+##### define a function to extract only the information that you need from the "classificationObject" #####
+extractList <- function(x){
+  a <-c(x@scientificname, x@rank)
+  b <-c(x@child@scientificname, x@child@rank)
+  c <-c(x@child@child@scientificname, x@child@child@rank)
+  d <-c(x@child@child@child@scientificname, x@child@child@child@rank)
+  e <-c(x@child@child@child@child@scientificname, x@child@child@child@child@rank)
+  f <-c(x@child@child@child@child@child@scientificname, x@child@child@child@child@child@rank)
+  g <-c(x@child@child@child@child@child@child@scientificname, x@child@child@child@child@child@child@rank)
+  h <-c(x@child@child@child@child@child@child@child@scientificname, x@child@child@child@child@child@child@child@rank)
+  i <-c(x@child@child@child@child@child@child@child@child@scientificname, x@child@child@child@child@child@child@child@child@rank)
+  j <-c(x@child@child@child@child@child@child@child@child@child@scientificname, x@child@child@child@child@child@child@child@child@child@rank)
+  vector<-c(a,b,c,d,e,f,g,h,i,j)
+  return(vector)
+}
+
+##### feed the classificationObject to the extractList function to actually get just the taxonomic string that you need #####
+taxstring <- lapply(FUN = extractList, classificationObject)
+
+##### row bind (with fill) the list of taxonomic character vectors by first making them transposed data frames in turn using lapply #####
+df<-rbind.fill(lapply(taxstring, function(X) data.frame(t(X))))
+df
+
+#select the columns I need
+df<-df %>% 
+  select(X1,X3,X5,X7,X9,X11,X13,X15,X17,X19)
+
+##### Creating a names string #####
+names(df) <- c("Superdomain","Kingdom","Phylum","Class","Subclass","Order","Suborder","Family","Genus","Species")
+
+##### Go out to manual fixes of df, problem with alignment of row entries with taxonomic level headings ####
+fix(df)
+
+##### Add the aphia ID numbers back to to the taxonomic dataframe in preparation for the merge function #####
+table(op$ScientificName)
+table(op$WormsID)
+a<-op$WormsID
+names(MySpecList)
+b<-MySpecList$AccTaxID
+di
+df
+df$WormsID <- MySpecList$AccTaxID
+df
+names(df)
+
+##### now selection only the fields from df that I want to merge back to OP ##### 
+df <- df %>% 
+  select(WormsID, Subclass, Suborder)
+df
+setdiff(names(df), names(op))
+
+##### merging the new taxonomic inofmation in df with our op table.  #####
+op<-merge(op, df, by = "WormsID", all.x = T)
+names(op)
+
+##### _____ OUTPUT: "op"
+save(op, file = "./OutData/op.RData")
+
+##### ____________ geographic subsetting #####
 
 ##### Geographic subsetting to Gulf of Mexico (R code for data distribution to John Reed) ##### 
 tdataGOMEX<- subset(tdata, as.numeric(Latitude) > 20 & 
@@ -1021,6 +1269,8 @@ tdataGOMEX <- subset(tdataGOMEX, Flag == 0, )
 
 # Writing data for release
 write.table(tdataGOMEX,"DSCRTP_NatDB_20141002-1_GOMEXsubset.txt", row.names = F, quote = F, sep = "\t")
+
+##### __________ NEW DATA: Pacific Sponge Data #####
 
 ##### Bringing in Pacific sponge data ##### 
 options(stringsAsFactors=FALSE)
@@ -1227,6 +1477,8 @@ sponge$TrackingID <- sponge$Accession.Number
 sponge <- sponge[,1:102]
 names(sponge)
 
+###### ____________ Schema Adherence Modifications to "tdata" #####
+
 ##### Bringing in a list of correctly named and ordred variable name from the schema spreadsheet #####
 template <- read.csv("FullTemplate.csv", header = F, stringsAsFactors = FALSE)
 template <- as.character(template)
@@ -1245,7 +1497,7 @@ goes<-trim(goes)
 stays<-sort(stays)
 goes<-sort(goes)
 
-##### defining column changes function for tdata.   #####
+##### defining column changes function for "tdata" #####
 col.change <- function(goes, stays){
 z = goes
 x <-which(colnames(tdata) == z)
@@ -1266,7 +1518,7 @@ tdata<-tdata[,c(template)]
 #checking
 names(tdata)
 
-######______________________________######
+######______________ Null Assignment Module ###### ######
 
 ##### The steps in this code section allow for proper null assignment for numeric and character variables #####
 
@@ -1327,7 +1579,9 @@ lapply(character, FUN = FactorNull)
 #Again, this is done to create tdata2 and sponge2, so steps 1-5 are executed twice.
 tdata2 <- a
 
-######______________________________######
+##### _____OUTPUT: "sponge2" AND "tdata2" RUN TWICE!!! #####
+
+#####____________ Adding tdata and sponge data together #####
 
 ##### checking for missing lat and long on outputs from the null assignment module above #####
 table(sponge2[is.na(sponge2$Longitude) == T , c("Longitude")], useNA = "always")
@@ -1346,6 +1600,10 @@ library(plyr)
 d <- rbind.fill(tdata2, sponge2)
 fix(d)
 
+###### _____ OUTPUT: "d"#####
+
+##### ____________ FishCouncilRegion Bugfix ##### 
+
 ##### Fixing problem with FishCouncilRegion with d ######
 
 d[d$FishCouncilRegion == "South Atlantic/Gulf of Mexico" &
@@ -1357,11 +1615,12 @@ d[d$FishCouncilRegion == "South Atlantic; Gulf of Mexico" &
 #checks
 table(d$FishCouncilRegion, useNA = "always")
 
+##### ____________ Write Table for NCDDC #####
+
 ##### Write out the quick release version for NCDDC. Can't Repeat This Command #####
 # write.table(d,"DSCRTP_NatDB_20141219-0.txt", row.names = F, quote = F, sep = "\t")
 
-
-#####______________________________________######
+##### ____________ GIS enhancement module ###### 
 
 ##### GIS Modules to populate all gis variables #####
 
@@ -1912,16 +2171,7 @@ rm(z)
 ##### Removing the extra gis variables that don't matter any more ##### 
 data <- data[,-c(94:97)]
 
-#####_______________________________######
-
-##### Saving entire workspace #####
-save.image("C:/rworking/DeepSeaData20141217/.RData")
-
-##### Loading data and spdf ##### 
-load("H:/rworking/DeepSeaData20150108/spdf.RData")
-load("H:/rworking/DeepSeaData20150108/data.RData")
-
-#####_______________________________######
+##### ____________ Mapping Module ######
 
 ##### Experiment Using GGPlot2 to make a scalable map ##### 
 mp1 <- fortify(map(fill=TRUE, plot=FALSE))
@@ -1945,9 +2195,9 @@ points(spdf, pch=20, cex=0.2, col = "red")
 
 load("H:/rworking/DeepSeaData20150108/data.RData")
 
-#####_______________________________######
+##### ____________ Looking @ orig. Pacific Grounfish S. Data ######
 
-#####  Exploring Problem with existing Curt Whitmire Data ##### 
+#####  Exploring Problem with existing original Groundfish survey data (Curt Whitmire) Data ##### 
 
 curt <- data %>% 
   filter(DataProvider == "NOAA, Northwest Fisheries Science Center", 
@@ -1961,11 +2211,11 @@ table(curt$DataContact, useNA = "always")
 table(curt$Citation, useNA = "always")
 table(curt$SampleID, useNA = "always")
 
-##### NEWDATA __________________________#####
+##### ____________ NEWDATA: Pacific Groundfish Survey from (Curt Whitmire) #####
 
 ##### read in new Curt Whitmire data ##### 
 options(stringsAsFactors=FALSE)
-whitmire<-read.csv("WCGBTS_2001_13_DSCS_forDSCRTP.csv")
+whitmire<-read.csv("./InData/WCGBTS_2001_13_DSCS_forDSCRTP.csv")
 
 # make sure the names match
 setdiff(names(d), names(whitmire))
@@ -1992,117 +2242,120 @@ table(whitmire$CatalogNumber)
 #set Flag = 0
 whitmire$Flag <- "0"
 table(whitmire$Flag)
-save(whitmire, file = "whitmire.RData")
 
-#####_______________________________######
+##### _____ OUTPUT: "whitmire"
+save(whitmire, file = "./OutData/whitmire.RData")
 
+##### ____________ Fixing flag problem with "d"
 ##### Fixing problem with an errant Flag indicator #####
 load("C:/rworking/deep-sea-workbench/OutData/d.RData")
 d[d$Flag == "l" & is.na(d$Flag) == F,]$Flag <- "1"
 save(d, file = "d.RData")
 
-##### Adding the whitmire data to the original dataset ##### 
+##### _____OUTPUT: "whitmire"
+
+##### ____________ binding "whitmire" to the dbase ##### 
+
 #NOTE: Creating D2 which is a temporary file.
 # binding rows together
 load("C:/rworking/deep-sea-workbench/OutData/d2.RData")
 d2 <- rbind(d, whitmire)
 table(d2$Flag)
+save(d2, file = "d2.RData")
+
+#####_____ OUTPUT: "d2" #####
+
+#####____________ Adding Pacific Observer Program Data to the dbase #####
 
 ##### Adding the Merideth's Observer Program data to the mix ######
 load("C:/rworking/deep-sea-workbench/OutData/op.RData")
+setdiff(names(op), names(d2))
 d3 <- rbind.fill(d2, op)
-save(d2, file = "d2.RData")
 
-##### Adding the taxinomic master list #####
-options(stringsAsFactors=FALSE)
-taxmaster<-read.csv("./InData/tax_master.csv", header = T, na.strings = "")
+#####_____OUTPUT: "d3"##### 
+
+##### save d3 #####
+save(d3,file = "./OutData/d3.RData")
+
+##### ____________ Adding "osp" to main data frame
+
+d4 <- rbind.fill(d3, osp)
+
+#####_____ OUTPUT: "d4"#####
+
+##### ____________ Preparing data for Geographic Enhancement #####
+
+##### Flag lats and longs with NA or other problems #####
+table(d4$Flag, useNA = "always")
+table(d4[is.na(d4$Flag) == T, c("Latitude")], useNA = "always")
+d4$Flag[is.na(d4$Flag) == T]<-"0"
+
 
 ##### Creating a new spatial points data frame ##### 
+d4unflag<-d4[d4$Flag == "0",]
+d4unflag$Latitude <- as.numeric(d4unflag$Latitude)
+d4unflag$Longitude <- as.numeric(d4unflag$Longitude)
+d4unflag<-d4unflag[is.na(d4unflag$Latitude) == F,]
+d4unflag<-d4unflag[is.na(d4unflag$Longitude) == F,]
 
 xy <- c("Longitude", "Latitude")
-coords<-d2[d2$Flag == "0", c(xy)]
+coords<-d4unflag[, c(xy)]
+class(coords)
+
 
 #making coords vectors numeric
 coords$Latitude<-as.numeric(coords$Latitude)
 coords$Longitude<-as.numeric(coords$Longitude)
 
-#defining subset of d2 to use, keeping the original data frame intact (this is a subset of d)
-d2data <-d2[d2$Flag == "0",]
-
 #creating SpatialPointsDataFrame from the subset. 
-spdf<-SpatialPointsDataFrame(coords, d2data, 
+spdf<-SpatialPointsDataFrame(coords, d4unflag, 
                              proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"), 
                              match.ID = TRUE)
 
 names(spdf)
 
+##### ____________ Assigning GIS Region (for Pacific Only )
+
 ##### Creating a new variable called gisPacificFMC ##### 
-load("C:/rworking/DeepSeaData20150128/pacific.RData")
+load("C:/rworking/deep-sea-workbench/SpatialDFs/pacific.RData")
 z<-over(spdf, pacific)
 names(z)
 table(z$Region)
-d2data$gisPacificFMC <- !(is.na(z$Region))
-save(d2data, file = "d2data.RData")
-rm(z)
-rm(pacific)
-rm(xy)
-rm(data)
+d4unflag$gisPacificFMC <- !(is.na(z$Region))
+table(d4unflag$gisPacificFMC, useNA = "always")
+save(d4unflag, file = "d4unflag.RData")
+
+##### ____________ Creating Mapping Subsets for SoDSCE report #####
 
 ##### Working on mapping subsets for the State of Deep Sea Corals #####
 # map 1 - Order == "Scleractinia"
-bs <- d2data %>%
+bs <- d4unflag %>%
     filter(Order == "Scleractinia", gisPacificFMC == T)  %>%
     select(Latitude, Longitude, VernacularNameCategory, Order, Genus, ScientificName)
 
-write.csv(bs, "bs.csv")
-
-table(bs$VernacularNameCategory)
-table(bs$Genus, bs$VernacularNameCategory)
-bs
-
-data.noflag <- data %>% 
-  filter(Flag == "0")
-
-bs2 <- data.noflag %>%
-  filter(Order == "Scleractinia", gisPacificFMC == T)  %>%
-  select(Latitude, Longitude, VernacularNameCategory, Order, Genus, ScientificName)
+write.csv(bs, "./OutData/bs.csv")
 
 # map 2 - Antipatharia
 
-at <- data.noflag %>%
+at <- d4unflag %>%
   filter(Order == "Antipatharia", 
          gisPacificFMC == T
          )  %>%
   select(DataProvider, SampleID, Latitude, Longitude, VernacularNameCategory, Order, Family, Genus, ScientificName)
 
-
-
-at2 <- d2data %>%
-  filter(Order == "Antipatharia", 
-         gisPacificFMC == T
-  )  %>%
-  select(DataProvider, SampleID, Latitude, Longitude, VernacularNameCategory, Order, Family, Genus, ScientificName)
-
-
-
-table(at$VernacularNameCategory, useNA = "always")
-table(at$Family, useNA = "always")
-
-head(at %>% 
-  filter(is.na(Family)), n=50)
-write.csv(at,"at.csv")
+write.csv(at,"./OutData/at.csv")
 
 # map 3 - Non-gorgonian alcyonaceans
 
-alcyon <- data.noflag %>%
+alcyon <- d4unflag %>%
   filter(Order == "Alcyonacea", 
          gisPacificFMC == T)  %>%
   select(DataProvider, SampleID, Latitude, Longitude, VernacularNameCategory, Order, Suborder, Family, Genus, ScientificName)
 
-table(alcyon$VernacularNameCategory, useNA = "always")
+
+write.csv(alcyon,"./OutData/alcyon.csv")
+
 table(alcyon$Suborder, useNA = "always")
-table(alcyon$Family, useNA = "always")
-write.csv(alcyon,"alcyon.csv")
 
 # map 4 - Gorgonian alcyonaceans – 
 # with differentcolors for suborders Holaxonia, Scleraxonia, & Calcaxonia 
@@ -2114,10 +2367,13 @@ gorg <- data.noflag %>%
          gisPacificFMC == T)  %>%
   select(DataProvider, SampleID, Latitude, Longitude, VernacularNameCategory, Order, Suborder, Family, Genus, ScientificName)
 
-table(data$DataProvider, useNA = "always")
-table(gorg$Suborder, useNA = "always")
-table(gorg$Family, useNA = "always")
 write.csv(gorg,"gorg.csv")
+
+#####____________ NEWDATA: "./InData/tax_master.csv" ##### 
+
+##### Adding the taxonomic master list #####
+options(stringsAsFactors=FALSE)
+taxmaster<-read.csv("./InData/tax_master.csv", header = T, na.strings = "")
 
 
 
