@@ -1,8 +1,13 @@
+library(SSOAP)
+w = processWSDL("http://www.marinespecies.org/aphia.php?p=soap&wsdl=1")
+iface = genSOAPClientInterface(, w)
+
 ##### defining a function to get the full taxonomic listing from World Registry of Marine Species #####
+iface@functions$getAphiaClassificationByID(289324,('http://www.marinespecies.org/aphia.php?p=soap'))
+
 getFullList <- function(x) {
   iface@functions$getAphiaClassificationByID(x,('http://www.marinespecies.org/aphia.php?p=soap')) 
   }
-
 ##### use lapply to feed an integer vector of AphiaID's to the taxonomic #####
 classificationObject<-lapply(FUN = getFullList, MySpecList$AccTaxID)
 
@@ -22,10 +27,9 @@ extractList <- function(x){
           return(vector)
 }
 
-
 ##### feed the classificationObject to the extractList function to actually get just the taxonomic string that you need #####
 taxstring <- lapply(FUN = extractList, classificationObject)
 
 ##### row bind (with fill) the list of taxonomic character vectors by first making them transposed data frames in turn using lapply #####
-rbind.fill(lapply(taxstring, function(X) data.frame(t(X))))
+table<-rbind.fill(lapply(taxstring, function(X) data.frame(t(X))))
 

@@ -2362,12 +2362,61 @@ table(alcyon$Suborder, useNA = "always")
 # (this would trackwell with much of the region-level modeling 
 #which has been done at this level.Black dots for unidentified gorgonians
 
-gorg <- data.noflag %>%
-  filter(VernacularNameCategory == "gorgonian coral", 
+gorg <- d4unflag %>%
+  filter(Order == "Gorgonacea", 
          gisPacificFMC == T)  %>%
   select(DataProvider, SampleID, Latitude, Longitude, VernacularNameCategory, Order, Suborder, Family, Genus, ScientificName)
 
-write.csv(gorg,"gorg.csv")
+write.csv(gorg,"./OutData/gorg.csv")
+
+
+# 5) Pennatulacea – with different colors forsuborders 
+#Sessiliflorae & Subsessiliflorae (may be too many families tobreak it down further)
+#& unidentified seapens (black dots)
+
+table(d4unflag$Order)
+
+pen <- d4unflag %>%
+  filter(Order == "Pennatulacea", 
+         gisPacificFMC == T)  %>%
+  select(DataProvider, SampleID, Latitude, Longitude, VernacularNameCategory, Order, Suborder, Family, Genus, ScientificName)
+
+table(pen$Family, useNA = "always")
+
+write.csv(pen, "./OutData/pen.csv")
+
+
+#6) Stylasterid corals and other (e.g., gold corals)
+
+table(d4unflag$Order)
+
+styl <- d4unflag %>%
+  filter(Family == "Stylasteridae", 
+         gisPacificFMC == T)  %>%
+  select(DataProvider, SampleID, Latitude, Longitude, VernacularNameCategory, Order, Suborder, Family, Genus, ScientificName)
+
+table(styl$Order)
+
+write.csv(styl, "./OutData/styl.csv")
+
+
+# 7) Sponges (one map with different colors for Porifera 
+# (unidentified – black dots), Demosponges, Glass sponges, and calcareous sponge
+
+table(d4unflag$Phylum, useNA = "always")
+
+sp <- d4unflag %>%
+  filter(Phylum == "Porifera", 
+         gisPacificFMC == T)  %>%
+  select(DataProvider, SampleID, Latitude, Longitude, VernacularNameCategory, Order, Suborder, Family, Genus, ScientificName)
+
+table(sp$VernacularNameCategory, useNA = "always")
+
+write.csv(sp, "./OutData/sp.csv")
+
+
+
+
 
 #####____________ NEWDATA: "./InData/tax_master.csv" ##### 
 
