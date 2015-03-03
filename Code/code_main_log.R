@@ -2327,15 +2327,15 @@ save(d4unflag, file = "d4unflag.RData")
 
 ##### ____________ Creating Mapping Subsets for SoDSCE report #####
 
-##### Working on mapping subsets for the State of Deep Sea Corals #####
-# map 1 - Order == "Scleractinia"
+#Working on mapping subsets for the State of Deep Sea Corals #####
+###### map 1 - Order == "Scleractinia"#####
 bs <- d4unflag %>%
     filter(Order == "Scleractinia", gisPacificFMC == T)  %>%
     select(Latitude, Longitude, VernacularNameCategory, Order, Genus, ScientificName)
 
 write.csv(bs, "./OutData/bs.csv")
 
-# map 2 - Antipatharia
+###### map 2 - Antipatharia #####
 
 at <- d4unflag %>%
   filter(Order == "Antipatharia", 
@@ -2345,7 +2345,7 @@ at <- d4unflag %>%
 
 write.csv(at,"./OutData/at.csv")
 
-# map 3 - Non-gorgonian alcyonaceans
+###### map 3 - Non-gorgonian alcyonaceans #####
 
 alcyon <- d4unflag %>%
   filter(Order == "Alcyonacea", 
@@ -2357,7 +2357,7 @@ write.csv(alcyon,"./OutData/alcyon.csv")
 
 table(alcyon$Suborder, useNA = "always")
 
-# map 4 - Gorgonian alcyonaceans – 
+###### map 4 - Gorgonian alcyonaceans – #####
 # with differentcolors for suborders Holaxonia, Scleraxonia, & Calcaxonia 
 # (this would trackwell with much of the region-level modeling 
 #which has been done at this level.Black dots for unidentified gorgonians
@@ -2370,7 +2370,7 @@ gorg <- d4unflag %>%
 write.csv(gorg,"./OutData/gorg.csv")
 
 
-# 5) Pennatulacea – with different colors forsuborders 
+###### map 5 - Pennatulacea – with different colors forsuborders #####
 #Sessiliflorae & Subsessiliflorae (may be too many families tobreak it down further)
 #& unidentified seapens (black dots)
 
@@ -2386,7 +2386,7 @@ table(pen$Family, useNA = "always")
 write.csv(pen, "./OutData/pen.csv")
 
 
-#6) Stylasterid corals and other (e.g., gold corals)
+###### map 6 -  Stylasterid corals and other (e.g., gold corals)#####
 
 table(d4unflag$Order)
 
@@ -2400,7 +2400,7 @@ table(styl$Order)
 write.csv(styl, "./OutData/styl.csv")
 
 
-# 7) Sponges (one map with different colors for Porifera 
+###### map 7 -  Sponges (one map with different colors for Porifera #####
 # (unidentified – black dots), Demosponges, Glass sponges, and calcareous sponge
 
 table(d4unflag$Phylum, useNA = "always")
@@ -2415,16 +2415,37 @@ table(sp$VernacularNameCategory, useNA = "always")
 write.csv(sp, "./OutData/sp.csv")
 
 
-
-
-
 #####____________ NEWDATA: "./InData/tax_master.csv" ##### 
+
 
 ##### Adding the taxonomic master list #####
 options(stringsAsFactors=FALSE)
 taxmaster<-read.csv("./InData/tax_master.csv", header = T, na.strings = "")
 
 
+#####____________ Bug fixing ##### 
+
+##### working on creating fuzzy searches ##### 
 
 
+agrep(pattern, 
+      x, 
+      max.distance = 0.1, 
+      costs = NULL,
+      ignore.case = FALSE, 
+      value = FALSE, 
+      fixed = TRUE,
+      useBytes = FALSE)
 
+getwd()
+
+testmap <- d4unflag[agrepl("Madrepora", 
+      d4unflag$ScientificName, 
+      max.distance = 0.1, 
+      costs = NULL,
+      ignore.case = T, 
+      fixed = F,
+      useBytes = T) == T & 
+        d4unflag$FishCouncilRegion == "Pacific",c("Flag", "FlagReason", "Latitude", "Longitude", "ScientificName", "gisPacificFMC")]
+
+write.csv(testmap, "testmap.csv")
