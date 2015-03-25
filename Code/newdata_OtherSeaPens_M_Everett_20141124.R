@@ -4,6 +4,12 @@
 options(stringsAsFactors=FALSE)
 osp<-read.table("./InData/Sea_Pens_DSC_DB-Updated_MEverett_20141124_rmcguinn_seapens_other_sources.txt", sep = "\t", header = T)
 
+###### Making all variables in new dataset be character strings  ###### 
+osp <- data.frame(lapply(osp, as.character), stringsAsFactors=FALSE)
+
+#####Trim all leading and trailing whitespace in new data frame
+osp <- as.data.frame(apply(osp,2,function(x)gsub("^\\s+|\\s+$","",x)))
+
 ##### #finding and changing the column names in the new dataset that do not match. ##### 
 setdiff(names(osp), names(d2))
 names(osp)
@@ -20,71 +26,35 @@ z = "DecimalLongitude"
 x <-which(colnames(osp) == z)
 colnames(osp)[x] <- "Longitude"
 
-###### Making all variables in new dataset be character strings  ###### 
-osp <- data.frame(lapply(osp, as.character), stringsAsFactors=FALSE)
+##### Recode problems with ScientificName #####
 
-##### Filling in where ObservationDate is missing with NA values  ######
-osp$ObservationDate[op$ObservationDate == ""] <- NA
+#table(osp$ScientificName)
+osp$ScientificName[osp$ScientificName == "Halipteris sp."] <- "Halipteris"
+osp$ScientificName[osp$ScientificName == "Halipteris sp"] <- "Halipteris"
+osp$ScientificName[osp$ScientificName == "Umbellula sp."] <- "Umbellula"
 
-##### Changing ObservationDate to the right date format  #####
+#changing individual ObservationDate with inconsistent formats
+osp$ObservationDate[osp$ObservationDate == "7/22/07"] <- "7/22/2007"
+osp$ObservationDate[osp$ObservationDate == "7/8/09"] <- "7/8/2009"
+#checking
+#table(osp$ObservationDate, useNA = c("always"))
 
-#trimming white space
-trim <- function (x) gsub("^\\s+|\\s+$", "", x)
-osp$ObservationDate <- trim(osp$ObservationDate)
-
-#making some manual changes
-fix(osp)
-
-#changing ObservationDate to a true date class
-test<-
-  osp$ObservationDate <- as.Date(osp$ObservationDate, "%m/%d/%Y")
-table(osp$ObservationDate, useNA = c("always"))
-
-#testing a way to get back to GMT.  
-# y<-z
-# y
-# y<-paste(y, "-0800" ,sep = "")
-# y
-# 
-# test<-paste(op$ObservationDate, y, sep = " ")
-# test
-# test2<-strptime(test, "%Y-%m-%d %I:%M:%S%z")
-# test2
-# tail(test, n=10)
-# tail(test2, n=10)
-# 
-# y<-substr(strptime(y, "%I:%M:%S%z"),12,100) 
-# #y<-strptime(y, "%I:%M:%S%z")
-# y
-# 
-# tail(op$ObservationTime, n=10)
-# tail(y, n=10)
-# 
-# class(y)
-# as.Date(y)
+#changing ObservationDate to the schema format
+osp$ObservationDate <- as.Date(osp$ObservationDate, "%m/%d/%Y")
+#checking
+#table(osp$ObservationDate, useNA = c("always"))
 
 ##### Assign AphiaID and Species List ##### 
-Load library, process WSDL and prepare R SOAP functions
-install.packages("XML", dependencies = TRUE)
-download.file("http://www.omegahat.org/Prerelease/XMLSchema_0.8-0.tar.gz", "XMLSchema")
-install.packages("XMLSchema", type="source", repos = NULL)
-download.file("http://www.omegahat.org/Prerelease/SSOAP_0.91-0.tar.gz", "SSOAP")
-install.packages("SSOAP", type="source", repos = NULL)
 library(SSOAP)
 w = processWSDL("http://www.marinespecies.org/aphia.php?p=soap&wsdl=1")
 iface = genSOAPClientInterface(, w)
 
-#recode any problems with osp ScientificName
-osp$ScientificName[osp$ScientificName == "Halipteris sp."] <- "Halipteris"
-osp$ScientificName[osp$ScientificName == "Halipteris sp"] <- "Halipteris"
-osp$ScientificName[osp$ScientificName == "Umbellula sp."] <- "Umbellula"
 
 # Create your specieslist
 MySpecies<-c(unique(osp$ScientificName))
 MySpecies<-data.frame(MySpecies)
 MySpecList<-data.frame(unique(MySpecies))
 MySpecList
-
 
 # Get original AphiaID's for specieslist 
 AphiaMatch <- function(x) { 
@@ -98,8 +68,10 @@ AphiaMatch <- function(x) {
 MySpecList$OrigTaxID<-AphiaMatch(MySpecList$MySpecies)
 MySpecList
 
-# Get accepted synonym AphiaID's for specieslist 
+#Add missing AphiaID for Umbellula (this seems like a problem with the SSOAP service)
+MySpecList$OrigTaxID[MySpecList$OrigTaxID == "-999"] <- "128499"
 
+# Get accepted synonym AphiaID's for specieslist 
 SynResolv <- function(x) { 
   result<-NULL
   for (i in 1:length(x)) {
@@ -112,6 +84,8 @@ MySpecList$AccTaxID<-SynResolv(MySpecList$OrigTaxID)
 MySpecList
 
 # Add full record information (classification, ranking, authority,...)
+
+AphiaRecord <- iface@functions$getAphiaChildrenByID("128491",('http://www.marinespecies.org/aphia.php?p=soap')) 
 
 getFullRecord <- function(x) { 
   result<-NULL
@@ -130,11 +104,6 @@ getFullRecord <- function(x) {
   return(result)
 }
 AphiaRecords<-getFullRecord(MySpecList$AccTaxID)
-names(AphiaRecords)
-
-# Assign full information back to species list
-# MySpecList<-cbind(MySpecList, AphiaRecords)
-# MySpecList
 
 #join Worms records back to original data
 join <- merge(x = osp, y = AphiaRecords, by.x = "ScientificName", by.y = "scientificname", all.x = TRUE)
@@ -153,14 +122,6 @@ join <- join %>%
 names(join)
 table(join$ScientificNameAuthorship)
 osp<-join
-
-##### Flagging ####
-names(osp)
-osp$Flag <- "0"
-save(osp, file = "./OutData/osp.RData")
-
-#checking
-osp$Flag
 
 ##### Fixing names ##### 
 names(d)
