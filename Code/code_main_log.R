@@ -2094,7 +2094,7 @@ d2 <- rbind(d, whitmire)
 table(d2$Flag)
 save(d2, file = "d2.RData")
 
-#####_____ OUTPUT: "d2" #####
+#####_____OUTPUT: "d2" #####
 
 #####____________ Adding Pacific Observer Program Data to the dbase #####
 
@@ -2269,15 +2269,115 @@ agrep(pattern,
 
 getwd()
 
-testmap <- d4unflag[agrepl("Madrepora", 
-      d4unflag$ScientificName, 
-      max.distance = 0.1, 
+oculina <- d3[agrepl("Oculina", 
+      d3$ScientificName, 
+      max.distance = 0.01, 
       costs = NULL,
       ignore.case = T, 
       fixed = F,
-      useBytes = T) == T & 
-        d4unflag$FishCouncilRegion == "Pacific",c("Flag", "FlagReason", "Latitude", "Longitude", "ScientificName", "gisPacificFMC")]
+      useBytes = T),]
+##### taxonomic filtering #####
 
-write.csv(testmap, "testmap.csv")
+taxa<-"Enallopsammia"
+filter <- d3[grepl(taxa, d3$ScientificName,),]
+unique(filter$ScientificName)
+write.csv(filter, paste(taxa, ".csv", sep=""))
+table<-table(filter$ScientificName)
+write.csv(table, paste(taxa, "FrequencyTable.csv", sep=""))
+
+
+#####____________ Alaska Subset Mapping Work #####
+
+##### Geographic subsetting to Alaska Region ##### 
+geosub<- subset(d3, as.numeric(Latitude) > 40 & 
+                  as.numeric(Latitude) < 60 & 
+                  as.numeric(Longitude) < -115 |
+                  as.numeric(Longitude) > 145)
+
+##### Taking care of unflagging the RACEBASE trawl sample (Recall that they were flagged and needing unflagged for mapping##### 
+geosub[geosub$FlagReason == "No SampleID" & is.na(geosub$FlagReason) == F,]$Flag <- "0"   
+
+#checking
+table(geosub[geosub$FlagReason == "No SampleID",]$Flag, useNA = "always")
+
+#filtering for only unflagged records
+geosub <- geosub %>% 
+  filter(Flag == "0")
+
+#subsetting to just the variables of interest
+geosub <- geosub %>%
+  select(Flag, FlagReason, DataProvider, SampleID, Latitude, Longitude, VernacularNameCategory, Order, Suborder, Family, Genus, ScientificName)
+                 
+###### map 1 - Order == "Scleractinia"#####
+#checking
+table(geosub$Order, useNA = "always")
+
+table(geosub %>% 
+  filter(is.na(Order)) %>% 
+  select(ScientificName))
+
+#making the subset for mapping
+bs_ak <- geosub %>%
+  filter(Order == "Scleractinia")
+ 
+write.csv(bs_ak, "./OutData/bs_ak.csv")
+
+###### map 4 - Gorgonian alcyonaceans – #####
+# with differentcolors for suborders Holaxonia, Scleraxonia, & Calcaxonia 
+# (this would trackwell with much of the region-level modeling 
+#which has been done at this level.Black dots for unidentified gorgonians
+
+gorg_ak <- geosub %>%
+  filter(Order == "Gorgonacea")  %>%
+  select(Flag, FlagReason, DataProvider, SampleID, Latitude, Longitude, VernacularNameCategory, Order, Suborder, Family, Genus, ScientificName)
+
+write.csv(gorg_ak,"./OutData/gorg_ak.csv")
+
+
+##### ____________ OBIS subset release on 20150402 from DB version 20141219-0 #####
+
+#reading in the fields required for OBIS as a list
+template <- read.csv("indata/obistemplate.csv", header = F, stringsAsFactors = FALSE)
+template <- as.character(template)
+trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+template <- trim(template)
+template
+
+#checking set differences between names
+setdiff(template, names(d))
+
+# changing variable names where needed to match current schema
+d.obis <-rename(d, c("WormsID" = "AphiaID"))
+d.obis <- rename(d.obis, c("IdentificationRemarks" = "IdentificationComments"))
+d.obis <- rename(d.obis, c("OccurrenceRemarks" = "OccurrenceComments"))
+d.obis <- rename(d.obis, c("LocationComment" = "LocationComments"))
+
+# addin ImageURL field
+d.obis$ImageURL <- "NA"
+
+# checking the set differences between names to make sure all is fixed
+setdiff(template, names(d.obis))
+
+# selecting only the unflagged records and applying the OBIS field template
+obis<-d.obis[d.obis$Flag == "0" & is.na(d.obis$Flag) == F, c(template)]
+
+# checking the field names on the file
+names(obis)
+
+# writing out the new set
+write.table(obis,"OutData/DSCRTP_NatDB_20141219-0_OBIS_subset.txt", row.names = F, quote = F, sep = "\t")
+
+#####____________Writing out the Pacific Species List for Tom #####
+SpeciesList <- d4unflag %>%
+  filter(gisPacificFMC == T)  %>%
+  select(DataProvider, ScientificName)
+
+SpeciesList<-unique(SpeciesList$ScientificName)
+
+write.csv(SpeciesList, "./OutData/PacificSpeciesList.csv")
+
+
+
+
 
 
