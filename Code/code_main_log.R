@@ -91,7 +91,7 @@ subset(d, taxongenus == "Eunicea", c(flag, taxongenus))
 d[d$taxongenus == "Eunicea" & is.na(d$taxongenus) == F,]$flag <- 1
 d[d$taxongenus == "Eunicea" & is.na(d$taxongenus) == F,]$flagreason <- "Eunicea is zooxanthellate - remove from database"
 
-##### Working on bug #82- catagorical abundance is messed up in some ##### 
+##### Working on bug #82- categorical abundance is messed up in some ##### 
 subset(d, catalognumber == "418744", c(categoricalabundance, datacontact, reporter))
 subset(d6, CatalogNumber == "418744", c(CategoricalAbundance, DataContact, Reporter))
 
@@ -527,7 +527,7 @@ d[d$catalognumber == "110898", c("country", "locality", "ocean", "fishcouncilreg
 ##### bug 26 - 110910 – not “Gulf of Alaska” or should be negative Lon.  #####
 d[d$catalognumber == "110910", c("country", "locality", "ocean", "fishcouncilregion", "latitude", "longitude", "gislocality")]
 
-###### saving image ######
+###### _____ OUTPUT: saving image ######
 save.image("H:/rworking/20140731-1/.RData")
 
 ##### Writing DSCRTP_NatDB_20140808-1.txt"
@@ -553,7 +553,7 @@ d <-rename(d, c("samplingequipment" = "samplingprotocol"))
 setdiff(fofile, names(d))
 d <- d[,c(fofile)]
 
-######write and save new table (date: 20140812 at 11AM)######
+###### write and save new table (date: 20140812 at 11AM)######
 write.table(d,"DSCRTP_NatDB_20140808-1_orderchange.txt", row.names = F, quote = F, sep = "\t")
 save.image("H:/rworking/20140731-1/.RData")
 
@@ -648,8 +648,6 @@ subset(d,gisregion == "South-Atlantic", c(gisregion,fishcouncilregion))
 d[d$gisregion == "South-Atlantic" 
   & is.na(d$fishcouncilregion) == T
   & is.na(d$gisregion) == F, c("fishcouncilregion", "gisregion")]$fishcouncilregion <- "South-Atlantic"
-
-
 
 ##### #write and save new table. his table (date: 20140929 at 4PM) ###### 
 write.table(d,"DSCRTP_NatDB_20140929-1.txt", row.names = F, quote = F, sep = "\t")
@@ -2078,6 +2076,7 @@ table(whitmire$Flag)
 save(whitmire, file = "./OutData/whitmire.RData")
 
 ##### ____________ Fixing flag problem with "d"
+
 ##### Fixing problem with an errant Flag indicator #####
 load("C:/rworking/deep-sea-workbench/OutData/d.RData")
 d[d$Flag == "l" & is.na(d$Flag) == F,]$Flag <- "1"
@@ -2334,7 +2333,7 @@ gorg_ak <- geosub %>%
 write.csv(gorg_ak,"./OutData/gorg_ak.csv")
 
 
-##### ____________ OBIS subset release on 20150402 from DB version 20141219-0 #####
+#####____________ OBIS subset release on 20150402 from DB version 20141219-0 #####
 
 #reading in the fields required for OBIS as a list
 template <- read.csv("indata/obistemplate.csv", header = F, stringsAsFactors = FALSE)
@@ -2367,7 +2366,7 @@ names(obis)
 # writing out the new set
 write.table(obis,"OutData/DSCRTP_NatDB_20141219-0_OBIS_subset.txt", row.names = F, quote = F, sep = "\t")
 
-#####____________Writing out the Pacific Species List for Tom #####
+#####____________ Writing out the Pacific Species List for Tom #####
 SpeciesList <- d4unflag %>%
   filter(gisPacificFMC == T)  %>%
   select(DataProvider, ScientificName)
@@ -2376,7 +2375,11 @@ SpeciesList<-unique(SpeciesList$ScientificName)
 
 write.csv(SpeciesList, "./OutData/PacificSpeciesList.csv")
 
+#####____________ Working on extracting unique datasets #####
+x<-unique(d[c("DataProvider", "SurveyID", "DataContact", "Citation", "Repository")])
+names(x)
 
+write.csv(x, file = "./OutData/x.csv")
 
 
 
