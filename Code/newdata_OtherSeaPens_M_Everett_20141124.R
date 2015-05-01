@@ -4,7 +4,7 @@
 options(stringsAsFactors=FALSE)
 osp<-read.table("./InData/Sea_Pens_DSC_DB-Updated_MEverett_20141124_rmcguinn_seapens_other_sources.txt", sep = "\t", header = T)
 
-###### Making all variables in new dataset be character strings  ###### 
+###### Setting all variables in new dataset be character strings  ###### 
 osp <- data.frame(lapply(osp, as.character), stringsAsFactors=FALSE)
 
 #####Trim all leading and trailing whitespace in new data frame
