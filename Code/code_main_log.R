@@ -2376,11 +2376,19 @@ SpeciesList<-unique(SpeciesList$ScientificName)
 write.csv(SpeciesList, "./OutData/PacificSpeciesList.csv")
 
 #####____________ Working on extracting unique datasets #####
-x<-unique(d[c("DataProvider", "SurveyID", "DataContact", "Citation", "Repository")])
+x<-unique(d[c( "DataProvider", "DataContact", "Repository")])
 names(x)
-
 write.csv(x, file = "./OutData/x.csv")
 
+#
+table <- table(d$DataProvider,d$DataContact, useNA = "always")
+write.csv(table, file = "./OutData/table.csv")
+
+# using paste to define unique over multiple values prior to cross tabluting
+table <- table(
+  paste(paste(d$DataProvider, d$Repository, sep = " ; "), d$SurveyID, sep = " ; "),  
+  d$DataContact, useNA = "always")
+write.csv(table, file = "./OutData/table.csv")
 
 
 
