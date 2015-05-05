@@ -1351,10 +1351,11 @@ names(tdata)
 
 ##### The steps in this code section allow for proper null assignment for numeric and character variables #####
 
-#Important! Set each of the datasets that are going to be joined go through the null assignment module module and call it "a" 
-#the steps below must be executed for both of the datasets being added together (in this case
-#sponge and tdata). Outputs are tdata2 and sponge2 So steps must be executed twice, once for tdata
-#and once for. 
+# Important! Each of the datasets that are going to be joined to the main stem will go through ths null assignment module module.  
+#  name the object "a" the steps below must be executed for
+#  both of the datasets being added together (in this case
+#  sponge and tdata). Outputs are tdata2 and sponge2 So steps must be executed twice, once for tdata
+#  and once for. 
 
 a <- tdata 
 
@@ -2247,7 +2248,6 @@ write.csv(sp, "./OutData/sp.csv")
 
 #####____________ NEWDATA: "./InData/tax_master.csv" ##### 
 
-
 ##### Adding the taxonomic master list #####
 options(stringsAsFactors=FALSE)
 taxmaster<-read.csv("./InData/tax_master.csv", header = T, na.strings = "")
@@ -2275,6 +2275,7 @@ oculina <- d3[agrepl("Oculina",
       ignore.case = T, 
       fixed = F,
       useBytes = T),]
+
 ##### taxonomic filtering #####
 
 taxa<-"Enallopsammia"
@@ -2307,7 +2308,8 @@ geosub <- geosub %>%
 geosub <- geosub %>%
   select(Flag, FlagReason, DataProvider, SampleID, Latitude, Longitude, VernacularNameCategory, Order, Suborder, Family, Genus, ScientificName)
                  
-###### map 1 - Order == "Scleractinia"#####
+
+##### map 1 - Order == "Scleractinia"#####
 #checking
 table(geosub$Order, useNA = "always")
 
@@ -2366,6 +2368,7 @@ names(obis)
 # writing out the new set
 write.table(obis,"OutData/DSCRTP_NatDB_20141219-0_OBIS_subset.txt", row.names = F, quote = F, sep = "\t")
 
+
 #####____________ Writing out the Pacific Species List for Tom #####
 SpeciesList <- d4unflag %>%
   filter(gisPacificFMC == T)  %>%
@@ -2374,6 +2377,7 @@ SpeciesList <- d4unflag %>%
 SpeciesList<-unique(SpeciesList$ScientificName)
 
 write.csv(SpeciesList, "./OutData/PacificSpeciesList.csv")
+
 
 #####____________ Working on extracting unique datasets #####
 x<-unique(d[c( "DataProvider", "DataContact", "Repository")])
@@ -2389,6 +2393,39 @@ table <- table(
   paste(paste(d$DataProvider, d$Repository, sep = " ; "), d$SurveyID, sep = " ; "),  
   d$DataContact, useNA = "always")
 write.csv(table, file = "./OutData/table.csv")
+
+
+#####____________ 20150504_Notes#####
+
+# Prioritize data additions 
+#  AK, HI, Pacific Ground Fish (Curt Whitmire), Pacific Sponges (Tom Hourigan), Merideth E datasets)
+#  use this process in conjunction with the with the data inventory spreadsheet
+
+# Create new R import modules (patches) for each intake dataset
+# transform to fit schema 
+#  kill any bugs
+#  make sure to include a null assignment module at the end of each patch
+#  make sure to include a run of all GIS operations
+
+# Add any new data in serial fashion to the main stem.
+
+# Kill priority bugs.
+
+# Save new version to disk.
+
+# Release an updated version of the database 
+
+# Upload data on map portal by May 30
+
+# Divide the dataset into appropriate subsets for review by science teams
+#  paste together DataProvider, Repository, and SurveyID and call
+#  the concatenation DatasetID.  This variable is a first cut at an automated algo. to identify
+#  the illusive DatasetID.
+
+# Send out unique DatasetID datasets to the appropriate DataContact.
+
+
+
 
 
 
