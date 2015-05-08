@@ -21,6 +21,8 @@ library(ggplot2)
 #install.packages("data.table")
 library(data.table)
 #intstall.packages("plyr")
+#insatll.packags("dplyr")
+library(plyr)
 library(dplyr)
 #install.packages("car")
 library(car)
@@ -30,7 +32,6 @@ library(stringr)
 #install.packages("rgdal")
 library(rgdal)
 library(ggmap)
-library(plyr)
 library(SSOAP)
 
 ##### ____________ NEWDATA: Loading database version 201407311 #####
@@ -2397,6 +2398,8 @@ write.csv(table, file = "./OutData/table.csv")
 
 #####____________ 20150504_Notes#####
 
+# Work on getting the most current version of the shchema in line with the current version of the data
+
 # Prioritize data additions 
 #  AK, HI, Pacific Ground Fish (Curt Whitmire), Pacific Sponges (Tom Hourigan), Merideth E datasets)
 #  use this process in conjunction with the with the data inventory spreadsheet
@@ -2423,6 +2426,10 @@ write.csv(table, file = "./OutData/table.csv")
 #  the illusive DatasetID.
 
 # Send out unique DatasetID datasets to the appropriate DataContact.
+
+#####____________ 20150506_Making sure that dataset is most up to date as possible.  
+
+
 
 
 
