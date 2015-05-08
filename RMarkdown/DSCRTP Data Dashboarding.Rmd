@@ -35,7 +35,7 @@ data_flagged<-
 
 * Total number of unflagged records: **`r length(data_unfl$CatalogNumber)`**  
 ``` {r FlagProportion_Global, echo=FALSE, results='hide'}
-x <- (length(data_flagged$CatalogNumber)/length(data$CatalogNumber) *100)
+x <- (length(data_flagged$CatalogNumber)/length(data$CatalogNumber) * 100)
 ```
 
 * Proportion of records that are flagged: **`r format(round(x, 2), nsmall = 2)`%**
