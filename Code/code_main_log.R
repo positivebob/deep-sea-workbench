@@ -2427,9 +2427,44 @@ write.csv(table, file = "./OutData/table.csv")
 
 # Send out unique DatasetID datasets to the appropriate DataContact.
 
-#####____________ 20150506_Making sure that dataset is most up to date as possible.  
+#####____________ 20150506_Making sure that dataset is most up to date as possible. #####
+
+d3[grepl("Groundfish", d3$Citation),]$Flag <- "1"
+tdata[grepl("Groundfish", tdata$Citation),]$FlagReason
 
 
+table(d[grepl("Groundfish", d$Citation),]$Flag, useNA = "always")
+
+#####____________ 20150511_outputting a schema matched version of object (d4) and 
+#exporting as new dataset for NCEI.  
+
+outdata<-d4
+
+# Here run through schema.match to get new matched outdata
+# Here also run through null assignment module
+
+d4<-outdata
+
+# Checking 
+setdiff(names(d4), template)
+setdiff(template, names(d4))
+
+
+#putting new CatalogNumber's where NA is in the database
+x<-d4$CatalogNumber
+#create a variable that is the length of the NA entries
+y<-length(x[x == "-999"])
+summary(as.numeric(x), digits = 20)
+#Assign an integer series to all of the NA values in CatalogNumber
+x[x =="-999"]<-488896:(488896+(y-1))
+#checks
+head(x)
+tail(x)
+#Put the corrected column back in the sponge dataset
+d4$CatalogNumber<-x
+
+#####____________ 20150511_
+write.table(d4,"DSCRTP_NatDB_20150511-1.txt", row.names = F, quote = F, sep = "\t")
 
 
 
