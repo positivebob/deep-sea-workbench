@@ -99,7 +99,6 @@ subset <- subset(d, as.numeric(Latitude) > 18.1509 &
                    as.numeric(Longitude) < -80.45932 &
                    as.numeric(Longitude) > -97.858208)
 
-
 ##### Setting various to various filters for summary of QA datasets #####
 
 subset <- d2
@@ -198,7 +197,6 @@ write.csv(x,"DSCRTP_20150626-1_DatasetID_nrows3785.csv", row.names = F, quote = 
 lst1 <- split(x, with(x, interaction(Order,Locality)), drop = TRUE)
 lapply(seq_along(lst1),function(i) write.csv(lst1[[i]],file=paste0(names(lst1[i]),".csv"),row.names=FALSE)) 
 
-
 ##### Exporting taxonomy table #####
 x <- d %>%
   filter(as.numeric(Flag) == 0)  %>%
@@ -209,6 +207,7 @@ x <- d %>%
 setwd("C:/rworking/deep-sea-workbench/OutData")
 write.csv(x,"unique_taxonomy_table_from_DSCRTP_NatDB_20150714-0_.csv", row.names = F, quote = T)
           
+
 ##### Exporting dataset metadata ##### 
 x <- d %>%
   #filter(VehicleName == "Delta")  %>%
@@ -228,7 +227,6 @@ x <- d %>%
 setwd("C:/rworking/deep-sea-workbench/OutData")
 write.csv(x,"datasetID_NatDB_20150807-1-summary.csv", row.names = F, quote = T)
 write.csv(geosub,"cortes_tanner_natDB.csv", row.names = F, quote = T)
-
 
 ##### Taxonomic Table ##### 
 
@@ -264,6 +262,6 @@ lines([hpts, ])
 setwd("C:/rworking/deep-sea-workbench/OutData")
 write.csv(x,"datasetID_NatDB_20150807_tax_summary_AFSF.csv", row.names = F, quote = T)
 
-##### 
+##### Testing unique values 
 unique(factor(d_cor$DataProvider))
 unique(factor(d_cor$DataProvider))
