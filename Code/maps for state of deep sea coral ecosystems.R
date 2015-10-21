@@ -30,7 +30,6 @@ alcyon_wp <- d %>%
 setwd("C:/rworking/deep-sea-workbench/OutData")
 write.csv(alcyon_wp,"alcyon_wp_2.csv")
 
-
 ###### map 4 - Gorgonian alcyonaceans – #####
 # with differentcolors for suborders Holaxonia, Scleraxonia, & Calcaxonia 
 # (this would trackwell with much of the region-level modeling 
@@ -56,6 +55,7 @@ setwd("C:/rworking/deep-sea-workbench/OutData")
 write.csv(pen_wp,"pen_wp_2.csv")  
   
  
+
 ###### map 6 -  Stylasterid corals and other (e.g., gold corals)#####
 
 styl_wp <- d %>%
