@@ -5,33 +5,82 @@
 #Institution:  NOAA - CCEHBR
 #Place: Charleston, SC
 
-##### Installation/Loading of Packages #####
+##### Installation/Loading of Packages ##### 
+Stage line  
+
+Discard line	
+
+
 #install.packages("maptools")
 library(maptools)
+
 #install.packages("maps")
+
 library(maps)
+
 #("reshape")
+
+
 library(reshape)
+
 #install.packages("reshape2")
+
+
 library(reshape2)
+
+
 #install.packages("psych")
+
+
 library(psych)
+
+
 #install.packages("ggplot2")
+
+
 library(ggplot2)
+
+
 #install.packages("data.table")
+
 library(data.table)
+
+
 #intstall.packages("plyr")
+
+
 #insatll.packags("dplyr")
+
+
 library(plyr)
+
+
 library(dplyr)
+
+
 #install.packages("car")
+
+
 library(car)
+
+
 #install.packages("rgdal")
+
+
 library(gdata)
+
+
 library(stringr)
+
+
 #install.packages("rgdal")
+
+
 library(rgdal)
+
 library(ggmap)
+
+
 library(SSOAP)
 
 ##### ____________ NEWDATA: Loading database version 201407311 #####
@@ -49,8 +98,21 @@ geosub<- subset(d, as.numeric(latitude) > 20 &
                            as.numeric(latitude) < 35 & 
                            as.numeric(longitude) < -75 &
                            as.numeric(longitude) > -97, )
+
+
+
+##### Geographic subsetting to Cortes Bank and Tanner Bank
+geosub<- subset(d, as.numeric(Latitude) > 32.2 & 
+                  as.numeric(Latitude) < 33 & 
+                  as.numeric(Longitude) < -118.75 &
+                  as.numeric(Longitude) > -119.7, )
+
+
 ##### Subsetting to only flagged fields = 0
-geosub<- subset(geosub, flag == 0, )
+geosub<- subset(geosub, Flag == "0", )
+
+
+
 
 #####_____ OUTPUT: "DSC-RTP_Nat_DBS_GoMexSubset_20140731-1.csv"
 #### Writing data for release #####
@@ -1740,6 +1802,9 @@ closestSiteVec <- vector(mode = "numeric",length = nrow(spdf))
 minDistVec     <- vector(mode = "numeric",length = nrow(spdf))
 
 # Warning: this can take long time with the whole dataset. Much faster for subsets. 
+
+
+
 for (i in 1 : nrow(spdf))
 {
   distVec <- spDistsN1(ngia,spdf[i,],longlat = TRUE) 
@@ -1759,13 +1824,13 @@ gisNGIA <- as(ngia[closestSiteVec,]$FULL_NAME,"character")
 
 
 # Assign the Full Name vector back to the data in the appropriate place
-data$gisLocality <- gisNGIA
+d$gisLocality <- gisNGIA
 
 # Assign the minDistVec to a new variable called gisLocalityDist (units = km).  Adding this 
 # variable allows us to threshhold the distance
 # units of distance are in kilometers Great Circle Distance
 
-data$gisLocalityDist <- minDistVec
+d$gisLocalityDist <- minDistVec
 
 # right here we need an additional step to threshold the 
 # distance for gisLocality assignment (1km vs. 10km vs. 20km?)
